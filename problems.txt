@@ -1,0 +1,2 @@
+Problems:
+1. global descriptor table (both head and cpp)
