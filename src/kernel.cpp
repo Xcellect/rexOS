@@ -13,10 +13,10 @@ using namespace rexos::hardwarecomm;
 void printf(char* str) {
 	/* There is a specific memory location = 0xb8000. Whatever is put there
 	 * will be shown on the screen by the graphics card. 
-	 * 		 	 	 ____ ____ ___ ____ ____ ___ (2 bytes: 1st for color
-	 *		0xb8000:|0xFF|0x00| a |0xFF|0x00| b |	   	 2nd for character)
-	 *   high (4) bits ^ 	^ low (4) bits (color information)
-	 *   (1st) high byte ^ (default val: 0xFF00)
+	 * 		 	 ____ ____ ___ ____ ____ ___ (2 bytes: 1st for color
+	 *		0xb8000:|0xFF|0x00| a |0xFF|0x00| b |	   2nd for character, MSB 0)
+	 *  	    high (4) bits ^ 	^ low (4) bits (color information)
+	 *   	     (1st) high byte ^ (default val: 0xFF00)
 	 */
 	uint16_t* VideoMemory = (uint16_t*) 0xb8000;
 	// Cursor, so printf() call doesn't write to the same memory every time
@@ -98,8 +98,8 @@ class MouseToConsole : public MouseEventHandler {
 		void OnMouseMove(int x_offset, int y_offset) {
 			uint16_t* VideoMemory = (uint16_t*) 0xb8000;
 			VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xF000) >> 4 
-										| (VideoMemory[80*y+x] & 0x0F00) << 4 // now shift the low 4 bits to high
-										| (VideoMemory[80*y+x] & 0x00FF); // last 8 bits stay the same
+					| (VideoMemory[80*y+x] & 0x0F00) << 4 // now shift the low 4 bits to high
+					| (VideoMemory[80*y+x] & 0x00FF); // last 8 bits stay the same
 
 
 			x += x_offset;
@@ -114,8 +114,8 @@ class MouseToConsole : public MouseEventHandler {
 			// after we moved the cursor
 			VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xF000) /* take the high 4 bits */ 
 									>> 4 /* shift 4 bits right so they're the new low bits */
-									| (VideoMemory[80*y+x] & 0x0F00) << 4 // now shift the low 4 bits to high
-									| (VideoMemory[80*y+x] & 0x00FF); // last 8 bits stay the same
+					| (VideoMemory[80*y+x] & 0x0F00) << 4 // now shift the low 4 bits to high
+					| (VideoMemory[80*y+x] & 0x00FF); // last 8 bits stay the same
 		}
 
 };
