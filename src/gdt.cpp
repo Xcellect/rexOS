@@ -109,9 +109,9 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base,
 	target[7] = (base >> 24) & 0xFF;
 	/* eg. base is at memory address 2651568493 (4 byte/32 bit uint)
 	   2121568493 (dec) = 10011110 00001011 10111001 01101101 (bin)
-	  				   	  ________ ________ ________ ________
-					  	 |   ptr  |  ptr   |   ptr  |   ptr  |
-					   	      7       4	        3        2
+	  		  ________ ________ ________ ________
+			 |   ptr  |  ptr   |   ptr  |   ptr  |
+			      7       4	        3        2
 	 * target[2] gets 10011110 00001011 10111001 01101101 & 11111111 = 11101101
 	 * target[3] gets 10011110 00001011 10111001 & 11111111 = 10010000
 	 * target[4] gets 10011110 00001011 & 11111111 = 01110100
