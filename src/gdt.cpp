@@ -8,7 +8,7 @@ GlobalDescriptorTable::GlobalDescriptorTable()
   unusedSegmentSelector(0,0,0),				 
   codeSegmentSelector(0,64*1024*1024,0x9A),
   dataSegmentSelector(0,64*1024*1024,0x92) 
-  //		 base ----^	^--- size	 ^--flags/type
+  //	     base ----^	^--- size    ^--flags/type
 {
 	// Tell the processor to use this table. Tricky bc the CPU
 	// expects 6 bytes in a row. Down below we have 8 bytes where
@@ -59,10 +59,10 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base,
 		   Solution: the number in the limit in the byte 0, 1 and 6 is 
 		   multiplied by 2^12 (equivalent to left shifting 12 places). 
 		  
-		  		 ___ _ ___ ___
+		  	 ___ _ ___ ___
 		    	|   | |   |   |
-		   	     vir 6  1   0
-					^^^^^^^^^^^ right shifting these 20 bits 12 places
+		   	 vir 6  1   0
+			     ^^^^^^^^^ right shifting these 20 bits 12 places
 				12+20=32
 		   The base parameter is uint32 so it's allocated 4 bytes. The 
 		   most significant 20 bits are used and the rest 12 bits are cut off. 
@@ -84,10 +84,10 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base,
 	/* 	The 8 byte GDT:
 		 _______ _______ _______ _______ _______ _______ _______ _______
 		|  ptr  | f | l | flags |  ptr  |  ptr  |  ptr  | limit | limit |
-			7		6		5		4		3		2		1		0
-					^		^---------- access rights
-				1. High bits: flags
-				2. Low bits: limit 
+		    7	    6       5	    4	    3	    2	    1	    0
+			    ^	    ^---------- access rights
+			a. High bits: flags
+			b. Low bits: limit 
 	*/
 	// the AND operation preserves info so it effectively selects last 8 bits only
 	target[0] = limit & 0xFF;
@@ -99,7 +99,7 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base,
 	// 1046239(dec) = 1111 11110110 11011111 (bin)
 	//				   ___ _______ _______ 
 	//				  | l | limit | limit |
-	//				    6	  1		  0
+	//				    6	  1	  0
 	// target[0] will have 1111 1111 0110 1101 1111 & 1111 1111 = 1101 1111
 	// target[1] will have 1111 1111 0110 & 1111 1111 = 1111 0110
 	// target[6] will have 1111 & 1111 = 1111
@@ -110,8 +110,8 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base,
 	/* eg. base is at memory address 2651568493 (4 byte/32 bit uint)
 	   2121568493 (dec) = 10011110 00001011 10111001 01101101 (bin)
 	  				   	  ________ ________ ________ ________
-					  	 |   ptr  |	 ptr   |   ptr  |   ptr  |
-					   	 	  7       4		    3        2
+					  	 |   ptr  |  ptr   |   ptr  |   ptr  |
+					   	      7       4	        3        2
 	 * target[2] gets 10011110 00001011 10111001 01101101 & 11111111 = 11101101
 	 * target[3] gets 10011110 00001011 10111001 & 11111111 = 10010000
 	 * target[4] gets 10011110 00001011 & 11111111 = 01110100
@@ -144,8 +144,8 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base,
 		bit numbering) of the register after 8 edge triggers/cycles
 	    
 		00000000 10011110 00001011 10111001 | 01101101
-		^ preceding 8 bits are				  ^ last 8 bits are
-		padded with 0's							discarded
+		^ preceding 8 bits are		      ^ last 8 bits are
+		  padded with 0's			discarded
 	
 	* For a number m,
 		m << n == m * 2^n

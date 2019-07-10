@@ -18,11 +18,10 @@ namespace rexos {
 		But with only 2 bytes for ptr, you could only address 64 KB so this was
 		expanded in the following manner:
 		 _______ _______ _______ _______ _______ _______ _______ _______
-		|  ptr  | f | l | flags |  ptr  |  ptr  |  ptr  | limit | limit |
-			7		6		5		4		3		2		1		0
-					^		^---------- access rights
-				1. High bits: flags/type
-				2. Low bits: limit
+		|  ptr  | f | l | flags |  ptr  |  ptr  |  ptr  | limit | limit |						                7       6       5       4       3       2       1       0
+			    ^       ^---------- access rights
+			1. High bits: flags/type
+			2. Low bits: limit
 	 */
 	class GlobalDescriptorTable {
 		public:
