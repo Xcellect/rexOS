@@ -1,5 +1,10 @@
 # the second param tells the compiler to look for the headers in the include directory
 # reason why include is done with corner braces
+# definition of flags:
+# -fno-use-cxa-atexit: no memory management 
+# -nostdlib: no glibc library
+# -fno-rtti: no runtime type identification
+# -fno-leading-underscore (minor): without this the loader would have to call _kernelMain
 GPPPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore
 ASPARAMS = --32
 LDPARAMS = -melf_i386

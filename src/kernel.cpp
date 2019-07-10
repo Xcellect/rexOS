@@ -13,13 +13,13 @@ using namespace rexos::hardwarecomm;
 void printf(char* str) {
 	/* There is a specific memory location = 0xb8000. Whatever is put there
 	 * will be shown on the screen by the graphics card. 
-	 * 		 	 	 ____ ____ ___ _____ ___      (2 bytes: 1st for color
-	 *		0xb8000:|0xFF|0x00| a |  |  | b |	   			2nd for character)
+	 * 		 	 	 ____ ____ ___ ____ ____ ___ (2 bytes: 1st for color
+	 *		0xb8000:|0xFF|0x00| a |0xFF|0x00| b |	   	 2nd for character)
 	 *   high (4) bits ^ 	^ low (4) bits (color information)
 	 *   (1st) high byte ^ (default val: 0xFF00)
 	 */
 	uint16_t* VideoMemory = (uint16_t*) 0xb8000;
-	// Cursor
+	// Cursor, so printf() call doesn't write to the same memory every time
 	static uint8_t x = 0, y = 0;
 
 	// Copy the passed string to this location
@@ -40,7 +40,7 @@ void printf(char* str) {
 				x++;
 				break;
 		}
-		if(x >= 80) {
+		if(x >= 80) { // if x is greater than width move down
 			y++;
 			x = 0;
 		}
@@ -124,7 +124,7 @@ class MouseToConsole : public MouseEventHandler {
 // Defining constructor. This is a function pointer
 typedef void (*constructor)();
 // extern "C" tells g++ compiler not to use its naming conventions in the .o 
-// file so the loader.s can work properly
+// file so the linker.ld can work properly
 extern "C" constructor start_ctors;	// addr of the first constructor call
 extern "C" constructor end_ctors;	// after the addr of last constructor call
 // Now we can use start_ctors and end_ctors as pointers to the constructor

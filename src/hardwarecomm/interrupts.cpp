@@ -53,18 +53,18 @@ InterruptManager::InterruptManager(GlobalDescriptorTable* gdt)
   picSlaveCommand(0xA0),
   picSlaveData(0xA1)
 {
-	uint16_t CodeSegment = gdt->CodeSegmentSelector();
+	uint16_t codeSegmentOffset = gdt->CodeSegmentOffset();
 	const uint8_t IDT_INTERRUPT_GATE = 0xE;
 	for(uint16_t i = 0; i < 256; i++) {
 		handlers[i] = 0;
-		SetInterruptDescriptorTableEntry(i, CodeSegment, &IgnoreInterruptRequest, 0, IDT_INTERRUPT_GATE);
+		SetInterruptDescriptorTableEntry(i, codeSegmentOffset, &IgnoreInterruptRequest, 0, IDT_INTERRUPT_GATE);
 	}
 	handlers[0] = 0;
-	SetInterruptDescriptorTableEntry(0, CodeSegment, &IgnoreInterruptRequest, 0, IDT_INTERRUPT_GATE);
+	SetInterruptDescriptorTableEntry(0, codeSegmentOffset, &IgnoreInterruptRequest, 0, IDT_INTERRUPT_GATE);
 
-	SetInterruptDescriptorTableEntry(0x20, CodeSegment, &HandleInterruptRequest0x00, 0, IDT_INTERRUPT_GATE);
-	SetInterruptDescriptorTableEntry(0x21, CodeSegment, &HandleInterruptRequest0x01, 0, IDT_INTERRUPT_GATE);
-	SetInterruptDescriptorTableEntry(0x2C, CodeSegment, &HandleInterruptRequest0x0C, 0, IDT_INTERRUPT_GATE);
+	SetInterruptDescriptorTableEntry(0x20, codeSegmentOffset, &HandleInterruptRequest0x00, 0, IDT_INTERRUPT_GATE);
+	SetInterruptDescriptorTableEntry(0x21, codeSegmentOffset, &HandleInterruptRequest0x01, 0, IDT_INTERRUPT_GATE);
+	SetInterruptDescriptorTableEntry(0x2C, codeSegmentOffset, &HandleInterruptRequest0x0C, 0, IDT_INTERRUPT_GATE);
 
 	
 	picMasterCommand.Write(0x11);
