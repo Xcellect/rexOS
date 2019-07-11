@@ -15,23 +15,24 @@
 # text segment of the code
 .section .text
 # loader.o (<-loader.s) will be linked to kernel.o(<-kernel.cpp) 
-# so here we declare there will kernelMain
-.extern kernelMain
-.extern callConstructors
+# .extern declares external functions from other object files this file's object
+# is combined with. it's like function declaration in C/C++
+.extern kernelMain			# main function of kernel.o
+.extern callConstructors	# kernel.o's ctor
 
 
 # Program entry point
 .global loader
 loader:
 	mov $kernel_stack, %esp		# set the stack ptr to ptr for some stack (declared in bss)
-	call callConstructors
+	call callConstructors		# build the kernel
 	# before the bootloader loads the kernel it creates a multiboot structure in the RAM.
 	# in the following instructions we're building the main function's arg array 
 	# 1. taking multiboot struct ptr in ax 
 	# 2. the multiboot magic number in the bx
-	push %eax		# take the multiboot struct ptr
-	push %ebx		# take the magic number
-	call kernelMain
+	push %eax		# push multiboot struct ptr
+	push %ebx		# push multiboot magic number
+	call kernelMain	# call kernel.o's main function
 
 _stop:							# infinite loop
 	cli
@@ -40,8 +41,8 @@ _stop:							# infinite loop
 
 
 
-
+# bss segment is for undeclared data
 .section .bss
-.space 2*1024*1024;	# 2 MiB space padding after text segment so stack doesn't overwrite text
+.space 2*1024*1024;	# 2 MB space padding after text segment so stack doesn't overwrite text
 
 kernel_stack:

@@ -5,15 +5,15 @@ ENTRY(loader)
 OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386:i386)
 
-/* Collect the sections from different .o files and combine them to new section */
+/* Collect the sections from different .o files and combine them here */
 SECTIONS
 {
 	. = 0x0100000;
 	/* text section */
 	.text :
 	{
-		*(.multiboot) /* multiboot section from loader.s */
-		*(.text*) /* text sections of the other files */
+		*(.multiboot) /* ALL the multiboot sections; only one in loader.s */
+		*(.text*) /* ALL the text section ptr */
 		*(.rodata)
 	}
 
@@ -33,7 +33,7 @@ SECTIONS
 		*(.data)	/* contains the data sections from .o files */
 	}
 
-	/* take the bss sections */
+	/* take ALL the bss sections */
 	.bss :
 	{
 		*(.bss)
