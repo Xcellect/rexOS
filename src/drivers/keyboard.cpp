@@ -14,14 +14,14 @@ void KeyboardEventHandler::OnKeyDown(char c) {
 }
 
 
-
+// (K.2.) Constructing the KB Driver
 KeyboardDriver::KeyboardDriver(InterruptManager* manager, KeyboardEventHandler *handler)
 // following is a (data members & base classes) constructor initialization list
 // this is done by listing the members between args list and function body
 // usually these members dont have default constructors so they have to be initialized
 // simplest and efficient way to guarantee all initialization of data members are done before entering the body
 : 
-InterruptHandler(0x21, manager),
+InterruptHandler(0x21, manager), // constructing IH with 0x21 (KB int)
 dataport(0x60),
 commandport(0x64) {
     this->handler = handler; // start the handler
@@ -34,18 +34,26 @@ void printf(char*);
 void printfHex(uint8_t);
 
 void KeyboardDriver::Activate() {
+    // When the user holds down the key, it'll wait until they release it
+    // and it will remove all the keystrokes that might have been there 
+    // before
     while(commandport.Read() & 0x1)
         dataport.Read();
-    commandport.Write(0xAE);    // Tells keyboard to interrupt
-    commandport.Write(0x20);    // Get current state
+    commandport.Write(0xAE);    // a. Activate (KB) interrupts
+    commandport.Write(0x20);    // b. Get current state
+    // c. Set rightmost bit to 1, since this will be the new state
+    // and clear the 5th bit
     uint8_t status = (dataport.Read() | 1) & ~0x10;
-    commandport.Write(0x60); // set curr state
-    dataport.Write(status); //show it on screen
+    commandport.Write(0x60); // d. Change curr state
+    // e. Step b. gives the curr state. We change the curr state and write
+    // the changed value back
+    dataport.Write(status);
 
-    dataport.Write(0xF4); // activates keyboard
+    dataport.Write(0xF4); // Activates keyboard
 }
-
+// (K.2.) HandleInterrupt for KB
 uint32_t KeyboardDriver::HandleInterrupt(uint32_t esp) {
+    // If we have a keystroke we have to fetch it
     uint8_t key = dataport.Read();
     if(handler == 0) {
         return esp;

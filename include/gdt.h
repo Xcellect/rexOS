@@ -3,7 +3,7 @@
 #include <common/types.h>
 namespace rexos {
 	/* 
-	Purpose: Setting up a global descriptor table to define memory segments for
+	Purpose: (G.1.) Setting up a global descriptor table to define memory segments for
 	the IDT or the interrupt handler. This helps the IDT switch back and forth 
 	between the kernel and the userspace memory segments on the event of a H/W
 	interrupt.

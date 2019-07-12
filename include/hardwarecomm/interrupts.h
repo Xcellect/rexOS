@@ -6,25 +6,35 @@
 namespace rexos {
 	namespace hardwarecomm {
 		class InterruptManager;
-
+		// (I.22.) Purpose: Interface for HW drivers which the IM can use
 		class InterruptHandler {
 			protected:
+				// This will know its own interrupt number
 				rexos::common::uint8_t interruptNumber;
+				// Ptr to the interrupt manager it's connected to
 				InterruptManager* interruptManager;
-
+				// Protected Ctor/Dtor so we cannot instantiate this
+				// We dont have purely virtual functions so we dont have
+				// abstract classes
 				InterruptHandler(rexos::common::uint8_t interruptNumber, InterruptManager* interruptManager);
 				~InterruptHandler();
 			public:
 				virtual rexos::common::uint32_t HandleInterrupt(rexos::common::uint32_t esp);
 		};
 
-// Constructing the Interrupt Descriptor Table
+	// (I.6.) Constructing the Interrupt Descriptor Table
 		class InterruptManager {
+			// (I.23.) Make InterruptManager and InterruptHandler class'
+			// protected attributes available to each other
 			friend class InterruptHandler;
 			protected:
+				// (I.18.) Purpose: To have access to the ports in order to
+				// signal the PIC
 				static InterruptManager* ActiveInterruptManager;
+				// (I.24.) Something like an IDT but on a higher level
+				// Hence, the InterruptHandler array of 256 entries
 				InterruptHandler* handlers[256];
-				// The entries of IDT are called Gate Descriptors
+				// (I.7.) The entries of IDT are called Gate Descriptors
 				struct GateDescriptor {
 					// Ptr to the handler(split between low and high bits)
 					rexos::common::uint16_t handlerAddressLowBits;
@@ -43,7 +53,7 @@ namespace rexos {
 					rexos::common::uint32_t base;	// base/addr of the table
 				} __attribute__((packed));
 				
-				// A function that sets entries in the IDT
+				// (I.8.) A function that sets entries in the IDT
 				static void SetInterruptDescriptorTableEntry(
 					// number of the interrupt
 					rexos::common::uint8_t interruptNumber,
@@ -70,9 +80,11 @@ namespace rexos {
 				// Signal CPU to close interrupts		
 				void Deactivate();
 				static rexos::common::uint32_t handleInterrupt(rexos::common::uint8_t interruptNumber, rexos::common::uint32_t esp);
+				// (I.19.) Static function handleInterrupt will call this non
+				// static function of the object ActiveInterruptManager
 				rexos::common::uint32_t DoHandleInterrupt(rexos::common::uint8_t interruptNumber, rexos::common::uint32_t esp);
-				// the following functions are implemented/defined in the 
-				// function 3 of interruptstubs.s
+				// (I.9.) the following functions are implemented/defined in the 
+				// Macro 3 of interruptstubs.s
 				static void IgnoreInterruptRequest();
 				static void HandleInterruptRequest0x00();		// timer interrupt
 				static void HandleInterruptRequest0x01();		// keyboard

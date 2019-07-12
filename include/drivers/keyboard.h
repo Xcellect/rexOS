@@ -24,7 +24,7 @@ namespace rexos {
                 virtual void OnKeyUp(char c);
                 virtual void OnKeyDown(char c);
         };
-
+        // (K.1.) KeyboardDriver class extends InterruptHandler class
         class KeyboardDriver : public rexos::hardwarecomm::InterruptHandler, public Driver {
             rexos::hardwarecomm::Port8Bit dataport;
             rexos::hardwarecomm::Port8Bit commandport;
@@ -33,6 +33,7 @@ namespace rexos {
         public:
             KeyboardDriver(rexos::hardwarecomm::InterruptManager* manager, KeyboardEventHandler* handler);
             ~KeyboardDriver();
+            // Overriding interrupt handler function
             virtual rexos::common::uint32_t HandleInterrupt(rexos::common::uint32_t esp);
             virtual void Activate();
         };
