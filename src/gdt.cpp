@@ -2,18 +2,15 @@
 using namespace rexos::common;
 using namespace rexos;
 
-// SegmentDescriptor(uint32_t base, uint32_t limit, uint8_t type)
+// (G.4.) GDT Constructor. Tell the processor to use this table. Tricky bc the
+// CPU expects 6 bytes in a row.
 GlobalDescriptorTable::GlobalDescriptorTable()
-: nullSegmentSelector(0,0,0), 			// constructing the SegmentDescriptor objects
-  unusedSegmentSelector(0,0,0),				 
+: nullSegmentSelector(0,0,0), 			// (G.3.) constructing the SegmentDescriptor objects
+  unusedSegmentSelector(0,0,0),			// aka the segments			 
   codeSegmentSelector(0,64*1024*1024,0x9A),
   dataSegmentSelector(0,64*1024*1024,0x92) 
   //	     base ----^	^--- size    ^--flags/type
 {
-	// Tell the processor to use this table. Tricky bc the CPU
-	// expects 6 bytes in a row. Down below we have 8 bytes where
-	// the first (LSB 0) 4 bytes are for the address of the table 
-	// itself.
 	uint32_t i[2];		// 4 byte (32bit) int array
 	i[1] = (uint32_t)this; // addr of the table
 	i[0] = sizeof(GlobalDescriptorTable) << 16;  // 1st 4 bytes
@@ -44,7 +41,7 @@ uint16_t GlobalDescriptorTable::CodeSegmentOffset() {
 }
 
 
-// Set the entries according to the parameters
+// (G.2.) Set the entries according to the parameters
 
 GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, 
 		uint32_t limit, uint8_t flags) {

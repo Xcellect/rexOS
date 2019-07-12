@@ -137,10 +137,20 @@ extern "C" void callConstructors() {
 	}
 }
 
+// kernel main function where all the necessary components are instantiated
 extern "C" void kernelMain(void* multiboot_structure, 
 		uint32_t magicnumber /*multiboot magic number*/) {
-	
+	/* (K.3.) Creating the GDT to set up a table with fields: base/ptr, size/
+	limits, flags/access rights that can be used to keep records of the 
+	code/data segments
+	*/
 	GlobalDescriptorTable gdt;
+	/* (K.4.) Passing the GDT's address to the interrupt manager to map the
+	interrupts to the code segments defined by the GDT. In a userspace program
+	when the CPU gets an interrupt, it has to move to kernel space where the
+	interrupt handler is located. Interrupt manager's job is to switch the
+	segments, access rights (0 - kernel space), and go to the interrupt handler
+	*/
 	rexos::hardwarecomm::InterruptManager interrupts(&gdt);
 	
 	printf("Initializing Hardware, Stage 1\n");
