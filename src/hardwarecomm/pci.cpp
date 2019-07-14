@@ -90,10 +90,10 @@ void PCIController::SelectDriver(DriverManager* driver_manager) {
             for(int function = 0; function < dev_functions; function++) {
                 // (P.15)
                 PCIDeviceDescriptor dev = GetDeviceDescriptor(bus, device, function);
-                // vendor_id will be either 0 or 1 if there is no device with 
-                // functions
+                // There can be gaps between functions. eg. function 2 then
+                // using a break would prevent us from finding that
                 if(dev.vendor_id == 0x0000 || dev.vendor_id == 0xFFFF) {
-                    break;  // no more functions
+                    continue;  // keep looking
                 }
                 printf("PCI BUS ");
                 printfHex(bus & 0xFF);
