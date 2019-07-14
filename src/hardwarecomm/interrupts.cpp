@@ -5,7 +5,7 @@ using namespace rexos::hardwarecomm;
 void printf(char* str);
 void printfHex(uint8_t);
 
-// (I.25.) Following is a constructor for InterruptHandler
+// (I.27.) Following is a constructor for InterruptHandler
 // eg. for kb the number is 0x21
 InterruptHandler::InterruptHandler(uint8_t interruptNumber, 
 	InterruptManager* interruptManager) {
@@ -57,21 +57,21 @@ void InterruptManager::SetInterruptDescriptorTableEntry(
 // in the contructor initilization list, it's also passed to the InterruptHandler 
 // at interrupts.cpp::6
 
-// (I.12.) InterruptManager constructor uses GDT to map interrupt handlers
+// (I.13.) InterruptManager constructor uses GDT to map interrupt handlers
 InterruptManager::InterruptManager(GlobalDescriptorTable* gdt)
-: picMasterCommand(0x20),	// Instantiating the ports
+: picMasterCommand(0x20),	// (I.14.) Instantiating the ports
   picMasterData(0x21),
   picSlaveCommand(0xA0),
   picSlaveData(0xA1)
 {
-	// (I.13.) Set the code seg, interrupt gate to 14 (0xE) and initialize all
+	// (I.15.) Set the code seg, interrupt gate to 14 (0xE) and initialize all
 	// to ignore
 	uint16_t codeSegmentOffset = gdt->CodeSegmentOffset();
 	// Type of the interrupt gate = 14 or 0xE
 	const uint8_t IDT_INTERRUPT_GATE = 0xE;
 	// Initialize all the entries to ignore interrupt
 	for(uint16_t i = 0; i < 256; i++) {
-		// (I.26.) No handlers yet 
+		// (I.28.) No handlers yet 
 		handlers[i] = 0;
 		// For the ith entry we take the code seg offset from the GDT,
 		// The address of ignore function (<- mapping happens here) 
@@ -85,7 +85,7 @@ InterruptManager::InterruptManager(GlobalDescriptorTable* gdt)
 	// IRQ_BASE (interruptstubs.s) is set to 0x20 so handle interrupt number,
 	// 0x00, 0x01, 0x0C etc are added to that before passing
 
-	// (I.14.) We want to handle the following interrupts
+	// (I.16.) We want to handle the following interrupts
 	SetInterruptDescriptorTableEntry(0x20, codeSegmentOffset, &HandleInterruptRequest0x00, 0, IDT_INTERRUPT_GATE);
 	SetInterruptDescriptorTableEntry(0x21, codeSegmentOffset, &HandleInterruptRequest0x01, 0, IDT_INTERRUPT_GATE);
 	SetInterruptDescriptorTableEntry(0x2C, codeSegmentOffset, &HandleInterruptRequest0x0C, 0, IDT_INTERRUPT_GATE);
@@ -97,7 +97,7 @@ InterruptManager::InterruptManager(GlobalDescriptorTable* gdt)
 	is called.
 	*/
 
-	// (I.15.) Before signaling the CPU to use this table, we communicate with these
+	// (I.17.) Before signaling the CPU to use this table, we communicate with these
 	// PICs (ports).
 	picMasterCommand.Write(0x11);
 	picSlaveCommand.Write(0x11);
@@ -117,7 +117,7 @@ InterruptManager::InterruptManager(GlobalDescriptorTable* gdt)
 	picMasterData.Write(0x00);
 	picSlaveData.Write(0x00);
 	
-	// (I.16.) Tell the processor to use the IDT
+	// (I.18.) Tell the processor to use the IDT
 	InterruptDescriptorTablePointer idt;
 	idt.size = 256 * sizeof(GateDescriptor) - 1;	// We have 256 entries
 	idt.base = (uint32_t) interruptDescriptorTable;	// Ptr to this IDT
@@ -127,14 +127,14 @@ InterruptManager::~InterruptManager() {
 	Deactivate();
 }
 
-/* (I.17.) Start/closing interrupts are in separate functions because in the kernel
+/* (I.19.) Start/closing interrupts are in separate functions because in the kernel
 the GDT, Interrupt Manager (&gdt), different hardwares(&IM, &HWSpecificHandler)
 need to be declared successively before the CPU can start interrupts.
 Else, there wouldn't be any hardware to receive interrupts from.
  */
 
 void InterruptManager::Activate() {
-	// (I.21.) If an IM is set already, deactivate it first
+	// (I.22.) If an IM is set already, deactivate it first
 	if(ActiveInterruptManager != 0)
 		ActiveInterruptManager->Deactivate();
 	// Set this Active IM ptr to this instance 
@@ -151,7 +151,7 @@ void InterruptManager::Deactivate() {
 }
 
 uint32_t InterruptManager::handleInterrupt(uint8_t interruptNumber, uint32_t esp) {
-	// (I.21.)
+	// (I.23.)
 	if(ActiveInterruptManager != 0)
 		return ActiveInterruptManager->DoHandleInterrupt(interruptNumber, esp);
 	return esp;
@@ -159,7 +159,7 @@ uint32_t InterruptManager::handleInterrupt(uint8_t interruptNumber, uint32_t esp
 // Same thing as handleInterrupt but on an object (non static)
 // Here we have access to the port functions
 uint32_t InterruptManager::DoHandleInterrupt(uint8_t interruptNumber, uint32_t esp) {
-	// (I.27.) If we have a handler for it, call the HandleInterrupt function
+	// (I.29.) If we have a handler for it, call the HandleInterrupt function
 	if(handlers[interruptNumber] != 0) {
 		esp = handlers[interruptNumber]->HandleInterrupt(esp);
 	} else if(interruptNumber != 0x20) {
