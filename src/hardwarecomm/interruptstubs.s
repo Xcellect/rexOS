@@ -57,7 +57,7 @@ HandleInterruptRequest 0x01
 HandleInterruptRequest 0x0C
 
 # (I.4.)
-int_bottom:		# jump target for the functions 2 and 3
+int_bottom:		# jump target for the macros 2 and 3
 	# the contents of the registers might be important after returning from the
 	# event handle. so we save them before jumping to the cpp function
 	pusha		# push all the registers

@@ -6,7 +6,7 @@
 namespace rexos {
 	namespace hardwarecomm {
 		class InterruptManager;
-		// (I.22.) Purpose: Interface for HW drivers which the IM can use
+		// (I.24.) Purpose: Interface for HW drivers which the IM can use
 		class InterruptHandler {
 			protected:
 				// This will know its own interrupt number
@@ -24,14 +24,14 @@ namespace rexos {
 
 	// (I.6.) Constructing the Interrupt Descriptor Table
 		class InterruptManager {
-			// (I.23.) Make InterruptManager and InterruptHandler class'
+			// (I.25.) Make InterruptManager and InterruptHandler class'
 			// protected attributes available to each other
 			friend class InterruptHandler;
 			protected:
-				// (I.18.) Purpose: To have access to the ports in order to
+				// (I.20.) Purpose: To have access to the ports in order to
 				// signal the PIC
 				static InterruptManager* ActiveInterruptManager;
-				// (I.24.) Something like an IDT but on a higher level
+				// (I.26.) Something like an IDT but on a higher level
 				// Hence, the InterruptHandler array of 256 entries
 				InterruptHandler* handlers[256];
 				// (I.7.) The entries of IDT are called Gate Descriptors
@@ -80,7 +80,7 @@ namespace rexos {
 				// Signal CPU to close interrupts		
 				void Deactivate();
 				static rexos::common::uint32_t handleInterrupt(rexos::common::uint8_t interruptNumber, rexos::common::uint32_t esp);
-				// (I.19.) Static function handleInterrupt will call this non
+				// (I.21.) Static function handleInterrupt will call this non
 				// static function of the object ActiveInterruptManager
 				rexos::common::uint32_t DoHandleInterrupt(rexos::common::uint8_t interruptNumber, rexos::common::uint32_t esp);
 				// (I.9.) the following functions are implemented/defined in the 
