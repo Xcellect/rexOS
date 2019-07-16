@@ -82,7 +82,7 @@ void printfHex(uint8_t);
 // 1. Enumerates bus, device, function numbers to find devices
 // 2. Selects drivers based on vendor, device, class, subclass id of devices
 // 3. Adds those drivers to the passed driver manager
-void PCIController::SelectDriver(DriverManager* driver_manager) {
+void PCIController::SelectDriver(DriverManager* driver_manager, rexos::hardwarecomm::InterruptManager* interrupt) {
     for( int bus = 0; bus < 8; bus++) {
         for(int device = 0; device < 32; device++) {
             // If device has functions, set num to 8, else set it to 1
@@ -95,6 +95,21 @@ void PCIController::SelectDriver(DriverManager* driver_manager) {
                 if(dev.vendor_id == 0x0000 || dev.vendor_id == 0xFFFF) {
                     continue;  // keep looking
                 }
+                // (P.20.) Iterate the BARs inside this loop
+                for(int barNum = 0; barNum < 6; barNum++) {
+                    BaseAddressRegister bar = 
+                        GetBaseAddressRegister(bus, device, function, barNum);
+                    // Proceed only if the address is set from above function
+                    if(bar.address && (bar.type == InputOutput))    // I/O type
+                    // The address will be set to the higher bits of the BAR,
+                    // which in case of I/O BARs contains the port number
+                        dev.portBase = (uint32_t)bar.address;
+                    // Get driver for this dev
+                    Driver* driver = GetDriver(dev, interrupt);
+                    if(driver != 0)
+                        driver_manager->AddDriver(driver);
+                }
+
                 printf("PCI BUS ");
                 printfHex(bus & 0xFF);
 
@@ -120,6 +135,139 @@ void PCIController::SelectDriver(DriverManager* driver_manager) {
         }
     }
 }
+// (P.23.)
+BaseAddressRegister PCIController::GetBaseAddressRegister(uint16_t bus, uint16_t device,
+                uint16_t function, uint16_t bar) {
+    BaseAddressRegister result;
+    // taking first 7 bits of the BAR at offset 0x0E
+    uint32_t headertype = Read(bus, device, function, 0x0E) & 0x7F;
+    // iterating 6 BARs if they're 32bit, 2 BARs if they're 64bit
+    int maxBARs = 6 - (4*headertype);
+    // if the requested bar is greater than the max, return the result 
+    if(bar >= maxBARs)
+        return result;  // address is null here
+    // Read the offset at 0x10 + 4*bar. 4 bc BARs have a size of 4
+    uint32_t bar_value = Read(bus,device,function, 0x10 + 4*bar);
+    // Set type
+    result.type = (bar_value & 0x1) ? InputOutput : MemoryMapping;
+    uint32_t temp;
+    
+    if(result.type == MemoryMapping) {
+        uint16_t barOffset = 0x10 + 4*bar;
+        /*
+        // google lowlevel.eu/pci/base_analyse
+        result.prefetchable = ((bar_value >> 3) & 0x1) == 0x1;
+        // Right-shift 1 place to discard the LSB 0 bit, then take the LSB 1
+        // and LSB 2 bits by ANDing with 0x3
+        switch ((bar_value >> 1) & 0x3)
+        {
+            case 0: // 32bit
+                {
+                    Write(bus,device,function,barOffset,0xFFFFFFF0);
+                    bar_value = Read(bus, device, function, barOffset);
+                    if(bar_value == 0) {
+                        if(result.prefetchable == true) {
+                            printf("ERROR: 32Bit Memory BAR ");
+                            printfHex(bar);
+                            printf(" contains no writable address bits\n");
+                        }
+                        printf("BAR ");
+                        printfHex(bar);
+                        printf("is unused\n");
+                    } else {
+                        result.address = (uint8_t*) (bar_value & ~0x5);
+                    }
+                    break;
+                }
+            case 1: // 20bit
+                {
+                    if(headertype == 0x01) {
+                        printf("ERROR: 20Bit Memory BAR ");
+                        printfHex(bar);
+                        printf(" is not allowed for a bridge\n");
+                    }
+                    Write(bus,device,function,barOffset,0xFFFFFFF0);
+                    bar_value = Read(bus, device, function, barOffset);
+                    if(bar_value == 0) {
+                        if(result.prefetchable == true) {
+                            printf("ERROR: 20Bit Memory BAR ");
+                            printfHex(bar);
+                            printf(" contains no writable address bits\n");
+                        }
+                        printf("BAR ");
+                        printfHex(bar);
+                        printf("is unused\n");
+                    } else {
+                        result.address = (uint8_t*) (bar_value & ~0x5);
+                    }
+                    break;
+                }
+            case 2: // 64bit
+                {
+                    if( bar >= maxBARs-1) {
+                        printf("ERROR: 64Bit Memory BAR ");
+                        printfHex(bar);
+                        printf(" can not start at last position\n");
+                    }
+                    if(result.prefetchable == false) {
+                        printf("ERROR: 64Bit Memory BAR ");
+                        printfHex(bar);
+                        printf(" contains a non prefetchable resource\n");
+                    }
+                    Write(bus,device,function,barOffset,0xFFFFFFF0);
+                    Write(bus,device,function,barOffset + 4,0xFFFFFFF0);
+                    const uint32_t bar_low_value = Read(bus,device,function,barOffset) & 0xFFFFFFF0;
+                    const uint32_t bar_high_value = Read(bus,device,function,barOffset + 4);
+                    result.address = (uint8_t*) (bar_low_value & ~0x5);
+                    break;
+                }
+            default:
+                printf ("ERROR: Memory-BAR ");
+                printfHex(bar);
+                printf(" is invalid");
+                break;
+        }
+        */
+    } else {    // I/O
+        // Discard bits at LSB 0 (type) and 1 (reserved) of BAR value. Rest are
+        // the port bits address we need for port
+        result.address = (uint8_t*) (bar_value & ~0x3);
+        result.prefetchable = false;
+    }
+    
+        
+
+    return result;
+}
+
+
+// (P.22.)
+Driver* PCIController::GetDriver(PCIDeviceDescriptor dev, InterruptManager* interrputs) {
+    switch(dev.vendor_id) {
+        case 0x1022: // AMD
+            switch(dev.device_id) {
+                case 0x2000: // am79c973 network chip
+                    printf(" AMD am79c973 ");
+                    break;
+            }
+            break;
+        case 0x8086: // Intel
+            break;
+    }
+    switch(dev.class_id) {
+        case 0x03: // Graphics
+            switch(dev.subclass_id) {
+                case 0x00:  // VGA graphics devices
+                    printf(" VGA ");
+                    break;
+            }
+            break;
+    }
+    return 0;
+}
+
+
+
 // (P.14.)
 PCIDeviceDescriptor PCIController::GetDeviceDescriptor(uint16_t bus, 
           uint16_t device, 
