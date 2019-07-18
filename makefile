@@ -18,6 +18,7 @@ objects = obj/loader.o \
 		obj/hardwarecomm/pci.o \
 		obj/drivers/keyboard.o \
 		obj/drivers/mouse.o \
+		obj/drivers/vga.o \
 		obj/kernel.o
 
 obj/%.o: src/%.cpp
