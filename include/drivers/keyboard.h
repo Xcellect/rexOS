@@ -21,8 +21,8 @@ namespace rexos {
         class KeyboardEventHandler {
             public:
                 KeyboardEventHandler();
-                virtual void OnKeyUp(char c);
-                virtual void OnKeyDown(char c);
+                virtual void OnKeyUp(char);
+                virtual void OnKeyDown(char);
         };
         // (K.1.) KeyboardDriver class extends InterruptHandler class
         class KeyboardDriver : public rexos::hardwarecomm::InterruptHandler, public Driver {

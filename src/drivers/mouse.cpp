@@ -39,7 +39,8 @@ void MouseDriver::Activate() {
     offset = 0;
     buttons = 0;
     
-
+    if(handler != 0)
+        handler->OnActivate();
 
     commandport.Write(0xA8);    // Activate mouse command port to get the curr state of pic
     commandport.Write(0x20);    // Get current state
@@ -75,7 +76,9 @@ uint32_t MouseDriver::HandleInterrupt(uint32_t esp) {
     // add this to the current pos to get a new curr pos
     if(offset == 0) {
         if(buffer[1] != 0 || buffer[2] != 0) {
-            handler->OnMouseMove(buffer[1], -buffer[2]);
+            // Casting the coords before passing this buffer to handler bc
+            // otherwise it doesn't work in the Desktop GUI mode
+            handler->OnMouseMove((int8_t)buffer[1], -((int8_t)buffer[2]));
             
         }
         // check if the button has been pressed. buffer stores the old state of the buttons.
@@ -84,7 +87,8 @@ uint32_t MouseDriver::HandleInterrupt(uint32_t esp) {
             // the bitshift produces 1 byte with 1 at ith position
             // 0b000100 <-- if i = 2 
             // finally compare that with the content of buffer 0 (curr state)
-            if(buffer[0] & (0x01 << i) != buttons & (0x01 << i)) {
+            // IMPORTANT: ALWAYS USE BRACKETS FOR MATH OPERATIONS
+            if((buffer[0] & (0x1 << i)) != (buttons & (0x1 << i))) {
                 if(buttons & (0x1<<i))
                     handler->OnMouseUnclick(i+1);
                 else

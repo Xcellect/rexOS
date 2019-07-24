@@ -6,11 +6,14 @@
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
+#include <gui/desktop.h>
+#include <gui/window.h>
 
 using namespace rexos;
 using namespace rexos::common;
 using namespace rexos::drivers;
 using namespace rexos::hardwarecomm;
+using namespace rexos::gui;
 
 void printf(char* str) {
 	/* There is a specific memory location = 0xb8000. Whatever is put there
@@ -154,16 +157,18 @@ extern "C" void kernelMain(void* multiboot_structure,
 	segments, access rights (0 - kernel space), and go to the interrupt handler
 	*/
 	rexos::hardwarecomm::InterruptManager interrupts(&gdt);
-	
+	Desktop desktop(320,200,0x00, 0x00, 0xA8);
 	printf("Initializing Hardware, Stage 1\n");
 	DriverManager drvManager;
 
-		PrintfKeyboardEventHandler kbhandler;
-		KeyboardDriver keyboard(&interrupts, &kbhandler);
+		//PrintfKeyboardEventHandler kbhandler;
+		//KeyboardDriver keyboard(&interrupts, &kbhandler);
+		KeyboardDriver keyboard(&interrupts, &desktop);
 		drvManager.AddDriver(&keyboard);
 		
-		MouseToConsole mousehandler;
-		MouseDriver mouse(&interrupts, &mousehandler);
+		//MouseToConsole mousehandler;
+		//MouseDriver mouse(&interrupts, &mousehandler);
+		MouseDriver mouse(&interrupts, &desktop);
 		drvManager.AddDriver(&mouse);
 
 		PCIController PCICon;
@@ -175,14 +180,17 @@ extern "C" void kernelMain(void* multiboot_structure,
 		drvManager.ActivateAll();
 
 	printf("Initializing Hardware, Stage 3\n");
-	interrupts.Activate();
 	
 	// 320 is outside the range of uint8
 	vga.SetMode(320,200,8);
-	for(uint32_t y = 0; y <200; y++) {
-		for(uint32_t x = 0; x<320; x++) {
-			vga.PutPixel(x, y, 0x00, 0x00, 0xA8);
-		}
-	}
-	while(1);
+	Window win1(&desktop, 10,10,20,20, 0xA8,0x00,0x00);
+	desktop.AddChild(&win1);
+	Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
+	desktop.AddChild(&win2);
+	
+	interrupts.Activate();
+	
+	
+	while(1)
+		desktop.Draw(&vga);
 }

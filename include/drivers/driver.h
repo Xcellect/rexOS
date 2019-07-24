@@ -29,7 +29,7 @@ namespace rexos {
             // since we dont have dynamic memory management yet
             // we'll make a fixed length driver
             private:
-                Driver* drivers[255];
+                Driver* drivers[265];
                 int numDrivers;
             public:
                 DriverManager();
