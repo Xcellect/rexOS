@@ -41,27 +41,31 @@ namespace rexos {
                 public:
                     VideoGraphicsArray();
                     ~VideoGraphicsArray();
-                    // (V.3.) A function to set the mode
-                    virtual bool SetMode(common::uint32_t width, 
+                    
+                    // (V.3.) To tell if a mode is supported
+                    virtual bool SupportMode(common::uint32_t width, 
                                         common::uint32_t height, 
                                         common::uint32_t colordepth);
-                    // (V.4.) To tell if a mode is supported
-                    virtual bool SupportMode(common::uint32_t width, 
+                    // (V.4.) A function to set the mode
+                    virtual bool SetMode(common::uint32_t width, 
                                         common::uint32_t height, 
                                         common::uint32_t colordepth);
                     // (V.7.) Accepts 24bit color code (R,G,B) and puts that at
                     // given coordinate. But VGA will be using an 8bit color
                     // version for now and we cannot set color like this here
-                    virtual void PutPixel(common::uint32_t x, common::uint32_t y,
-                                        common::uint8_t r, common::uint8_t g, 
-                                        common::uint8_t b);
+                    virtual void PutPixel(common::int32_t x, common::int32_t y,
+                                        common::int8_t r, common::int8_t g, 
+                                        common::int8_t b);
                     // (V.8) PutPixel from V.7. is suppossed to get an index.
                     // The 8Bit color mode uses a table of 256 entries of
                     // different colors. Here you select an index in that table
-                    virtual void PutPixel(common::uint32_t x, common::uint32_t y,
-                                        common::uint8_t colorIndex);
-
+                    virtual void PutPixel(common::int32_t x, common::int32_t y,
+                                        common::int8_t colorIndex);
+                    virtual void FillRectangle(common::uint32_t x, common::uint32_t y,
+                                        common::uint32_t w, common::uint32_t h,
+                                        common::uint8_t r, common::uint8_t g, 
+                                        common::uint8_t b);
             };
-    };
+    }
 }
 #endif
