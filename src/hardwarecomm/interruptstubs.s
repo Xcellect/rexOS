@@ -39,6 +39,8 @@ _ZN5rexos12hardwarecomm16InterruptManager26HandleInterruptRequest\num\()Ev:
 	# moving number arg to interruptnumber (defined at the bottom)
 	# IRQ_BASE is defined at the top
 	movb $\num + IRQ_BASE, (interruptnumber)
+	pushl $0; # for error value bc unless it's a real error, cpu doesnt
+	# push anything and this is so the struct in multitasking works
 	jmp int_bottom
 
 .endm
@@ -60,25 +62,45 @@ HandleInterruptRequest 0x0C
 int_bottom:		# jump target for the macros 2 and 3
 	# the contents of the registers might be important after returning from the
 	# event handle. so we save them before jumping to the cpp function
-	pusha		# push all the registers
-	pushl %ds	# push the data segment
-	pushl %es
-	pushl %fs
-	pushl %gs
+	# pusha		# push all the registers
+	# pushl %ds	# push the data segment
+	# pushl %es
+	# pushl %fs
+	# pushl %gs
 	
+	pushl %ebp
+	pushl %edi
+	pushl %esi
+
+	pushl %edx
+	pushl %ecx
+	pushl %ebx
+	pushl %eax
+
+	# call cpp handler
 	# passing these to the cpp file's function and jumping to it
 	pushl %esp
 	push (interruptnumber)
 	call _ZN5rexos12hardwarecomm16InterruptManager15handleInterruptEhj
-	add %esp, 6
-	movl %eax, %esp
+	# add %esp, 6
+	movl %eax, %esp # switch stack
 	
-	# restore the values
-	popl %gs
-	popl %fs
-	popl %es
-	popl %ds
-	popa
+	# restore the registers
+	popl %eax
+	popl %ebx
+	popl %ecx
+	popl %edx
+
+	popl %esi
+	popl %edi
+	popl %ebp
+	# popl %gs
+	# popl %fs
+	# popl %es
+	# popl %ds
+	# popa
+
+	add $4, %esp
 
 _ZN5rexos12hardwarecomm16InterruptManager22IgnoreInterruptRequestEv:
 	iret	# exiting/returning from this code to the previous process's stack
