@@ -8,6 +8,7 @@
 #include <drivers/vga.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
+#include <multitasking.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -125,6 +126,17 @@ class MouseToConsole : public MouseEventHandler {
 
 };
 
+void taskA() {
+	while(true)
+		printf("A");
+}
+void taskB() {
+	while(true)
+		printf("B");
+}
+
+
+
 
 // Defining constructor. This is a function pointer
 typedef void (*constructor)();
@@ -150,47 +162,67 @@ extern "C" void kernelMain(void* multiboot_structure,
 	code/data segments
 	*/
 	GlobalDescriptorTable gdt;
+	// IntHandler needs to comm TM to do the scheduling
+	TaskManager taskmngr;
+	Task task1(&gdt, taskA);
+	Task task2(&gdt, taskB);
+	taskmngr.AddTask(&task1);
+	taskmngr.AddTask(&task2);
+
 	/* (K.4.) Passing the GDT's address to the interrupt manager to map the
 	interrupts to the code segments defined by the GDT. In a userspace program
 	when the CPU gets an interrupt, it has to move to kernel space where the
 	interrupt handler is located. Interrupt manager's job is to switch the
 	segments, access rights (0 - kernel space), and go to the interrupt handler
 	*/
-	rexos::hardwarecomm::InterruptManager interrupts(&gdt);
-	Desktop desktop(320,200,0x00, 0x00, 0xA8);
+	rexos::hardwarecomm::InterruptManager interrupts(&gdt, &taskmngr);
+	
 	printf("Initializing Hardware, Stage 1\n");
 	DriverManager drvManager;
-
-		//PrintfKeyboardEventHandler kbhandler;
-		//KeyboardDriver keyboard(&interrupts, &kbhandler);
+	#ifdef GRAPHICSMODE
+	Desktop desktop(320,200,0x00, 0x00, 0xA8);
+	#endif
+		
+		#ifdef GRAPHICSMODE
 		KeyboardDriver keyboard(&interrupts, &desktop);
+		#endif
+		PrintfKeyboardEventHandler kbhandler;
+		KeyboardDriver keyboard(&interrupts, &kbhandler);
 		drvManager.AddDriver(&keyboard);
 		
-		//MouseToConsole mousehandler;
-		//MouseDriver mouse(&interrupts, &mousehandler);
+		
+		#ifdef GRAPHICSMODE
 		MouseDriver mouse(&interrupts, &desktop);
+		#endif
+		MouseToConsole mousehandler;
+		MouseDriver mouse(&interrupts, &mousehandler);
 		drvManager.AddDriver(&mouse);
 
 		PCIController PCICon;
 		PCICon.SelectDriver(&drvManager, &interrupts);
-
+		#ifdef GRAPHICSMODE
 		VideoGraphicsArray vga;
-
+		#endif
+	
 	printf("Initializing Hardware, Stage 2\n");
 		drvManager.ActivateAll();
 
 	printf("Initializing Hardware, Stage 3\n");
 	
 	// 320 is outside the range of uint8
+	#ifdef GRAPHICSMODE
 	vga.SetMode(320,200,8);
 	Window win1(&desktop, 10,10,20,20, 0xA8,0x00,0x00);
 	desktop.AddChild(&win1);
 	Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
 	desktop.AddChild(&win2);
+	#endif
 	
 	interrupts.Activate();
 	
 	
-	while(1)
+	while(1);
+	#ifdef GRAPHICSMODE
 		desktop.Draw(&vga);
+	#endif
 }

@@ -1,6 +1,7 @@
 #ifndef __REXOS__HARDWARECOMM__INTERRUPTMANAGER_H
 #define __REXOS__HARDWARECOMM__INTERRUPTMANAGER_H
 #include <common/types.h>
+#include <multitasking.h>
 #include <hardwarecomm/port.h>
 #include <gdt.h>
 namespace rexos {
@@ -34,6 +35,8 @@ namespace rexos {
 				// (I.26.) Something like an IDT but on a higher level
 				// Hence, the InterruptHandler array of 256 entries
 				InterruptHandler* handlers[256];
+				// A ptr to the task manager
+				TaskManager* taskManager;
 				// (I.7.) The entries of IDT are called Gate Descriptors
 				struct GateDescriptor {
 					// Ptr to the handler(split between low and high bits)
@@ -73,7 +76,7 @@ namespace rexos {
 
 			public:
 			// Ctor for IM (gets a ptr to the GDT so gdt.h is included)
-				InterruptManager(rexos::GlobalDescriptorTable* gdt);
+				InterruptManager(rexos::GlobalDescriptorTable* gdt, TaskManager* taskManager);
 				~InterruptManager();	// Dtor
 				// Signal CPU to start interrupts
 				void Activate();

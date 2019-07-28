@@ -1,4 +1,5 @@
 #include <hardwarecomm/interrupts.h>
+using namespace rexos;
 using namespace rexos::common;
 using namespace rexos::hardwarecomm;
 
@@ -58,12 +59,13 @@ void InterruptManager::SetInterruptDescriptorTableEntry(
 // at interrupts.cpp::6
 
 // (I.13.) InterruptManager constructor uses GDT to map interrupt handlers
-InterruptManager::InterruptManager(GlobalDescriptorTable* gdt)
+InterruptManager::InterruptManager(GlobalDescriptorTable* gdt, TaskManager* taskManager)
 : picMasterCommand(0x20),	// (I.14.) Instantiating the ports
   picMasterData(0x21),
   picSlaveCommand(0xA0),
   picSlaveData(0xA1)
 {
+	this->taskManager = taskManager;
 	// (I.15.) Set the code seg, interrupt gate to 14 (0xE) and initialize all
 	// to ignore
 	uint16_t codeSegmentOffset = gdt->CodeSegmentOffset();
@@ -167,6 +169,12 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interruptNumber, uint32_t e
 		printf("UNHANDLED INTERRUPT 0x");
 		printfHex(interruptNumber);
 	}
+	// If we have a timer interrupt
+	if(interruptNumber == 0x20) {
+		esp = (uint32_t)taskManager->Schedule((CPUState*)esp);
+	}
+
+
 	// Time to reply to the HW interrupts
 	// We have mapped hardwares from 0x20 to 0x30
 	if(0x20 <= interruptNumber && interruptNumber < 0x30) {
