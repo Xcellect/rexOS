@@ -11,11 +11,13 @@ LDPARAMS = -melf_i386
 
 objects = obj/loader.o \
 		obj/gdt.o \
+		obj/heap.o \
 		obj/drivers/driver.o \
 		obj/hardwarecomm/port.o \
 		obj/hardwarecomm/interruptstubs.o \
 		obj/hardwarecomm/interrupts.o \
 		obj/multitasking.o \
+		obj/drivers/amd_am79c973.o \
 		obj/hardwarecomm/pci.o \
 		obj/drivers/keyboard.o \
 		obj/drivers/mouse.o \
@@ -37,7 +39,7 @@ rexKernel.bin: linker.ld $(objects)
 	ld $(LDPARAMS) -T $< -o $@ $(objects)
 
 install: rexKernel.bin
-	sudo cp $< /boot/fireKernel.bin
+	sudo cp $< /boot/rexKernel.bin
 rexKernel.iso: rexKernel.bin
 	mkdir iso
 	mkdir iso/boot
@@ -45,6 +47,7 @@ rexKernel.iso: rexKernel.bin
 	cp $< iso/boot/
 	echo 'set timeout=0' >> iso/boot/grub/grub.cfg
 	echo 'set default=0' >> iso/boot/grub/grub.cfg
+	# The menuentry text is showing up in the heap
 	echo 'menuentry "Rex OS" {' >> iso/boot/grub/grub.cfg
 	echo '	multiboot /boot/rexKernel.bin' >> iso/boot/grub/grub.cfg
 	echo '	boot' >> iso/boot/grub/grub.cfg

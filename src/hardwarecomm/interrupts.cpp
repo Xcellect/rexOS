@@ -48,7 +48,7 @@ void InterruptManager::SetInterruptDescriptorTableEntry(
 	// use the passed value for offset
 	interruptDescriptorTable[interruptNumber].gdt_codeSegmentSelector = codeSegmentSelectorOffset;
 	// access rights
-	interruptDescriptorTable[interruptNumber].access = IDT_DESC_PRESENT | DescriptorType | ((DescriptorPrivilegeLevel & 3) << 5);
+	interruptDescriptorTable[interruptNumber].access = IDT_DESC_PRESENT | DescriptorType | ((DescriptorPrivilegeLevel & 3) << 5 | DescriptorType);
 	interruptDescriptorTable[interruptNumber].reserved = 0;
 }	
 
@@ -59,20 +59,21 @@ void InterruptManager::SetInterruptDescriptorTableEntry(
 // at interrupts.cpp::6
 
 // (I.13.) InterruptManager constructor uses GDT to map interrupt handlers
-InterruptManager::InterruptManager(GlobalDescriptorTable* gdt, TaskManager* taskManager)
+InterruptManager::InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescriptorTable* gdt, TaskManager* taskManager)
 : picMasterCommand(0x20),	// (I.14.) Instantiating the ports
   picMasterData(0x21),
   picSlaveCommand(0xA0),
   picSlaveData(0xA1)
 {
+	this->hardwareInterruptOffset = hardwareInterruptOffset;
 	this->taskManager = taskManager;
 	// (I.15.) Set the code seg, interrupt gate to 14 (0xE) and initialize all
 	// to ignore
-	uint16_t codeSegmentOffset = gdt->CodeSegmentOffset();
+	uint32_t codeSegmentOffset = gdt->CodeSegmentOffset();
 	// Type of the interrupt gate = 14 or 0xE
 	const uint8_t IDT_INTERRUPT_GATE = 0xE;
 	// Initialize all the entries to ignore interrupt
-	for(uint16_t i = 0; i < 256; i++) {
+	for(uint8_t i = 255; i > 0; --i) {
 		// (I.28.) No handlers yet 
 		handlers[i] = 0;
 		// For the ith entry we take the code seg offset from the GDT,
@@ -81,16 +82,21 @@ InterruptManager::InterruptManager(GlobalDescriptorTable* gdt, TaskManager* task
 		// The type of interrupt gate
 		SetInterruptDescriptorTableEntry(i, codeSegmentOffset, &IgnoreInterruptRequest, 0, IDT_INTERRUPT_GATE);
 	}
-	handlers[0] = 0;
 	SetInterruptDescriptorTableEntry(0, codeSegmentOffset, &IgnoreInterruptRequest, 0, IDT_INTERRUPT_GATE);
-
+	handlers[0] = 0;
+	
 	// IRQ_BASE (interruptstubs.s) is set to 0x20 so handle interrupt number,
 	// 0x00, 0x01, 0x0C etc are added to that before passing
 
 	// (I.16.) We want to handle the following interrupts
-	SetInterruptDescriptorTableEntry(0x20, codeSegmentOffset, &HandleInterruptRequest0x00, 0, IDT_INTERRUPT_GATE);
-	SetInterruptDescriptorTableEntry(0x21, codeSegmentOffset, &HandleInterruptRequest0x01, 0, IDT_INTERRUPT_GATE);
-	SetInterruptDescriptorTableEntry(0x2C, codeSegmentOffset, &HandleInterruptRequest0x0C, 0, IDT_INTERRUPT_GATE);
+	// Timer interrupt (Sent periodically)
+	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x00, codeSegmentOffset, &HandleInterruptRequest0x00, 0, IDT_INTERRUPT_GATE);
+	// Keyboard interrupt
+	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x01, codeSegmentOffset, &HandleInterruptRequest0x01, 0, IDT_INTERRUPT_GATE);
+	// Mouse interrupt
+	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0C, codeSegmentOffset, &HandleInterruptRequest0x0C, 0, IDT_INTERRUPT_GATE);
+	// (I.30.) Interrupt for AM79C973
+	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x09, codeSegmentOffset, &HandleInterruptRequest0x09, 0, IDT_INTERRUPT_GATE);
 
 	/* Example: If we get an interrupt 0x21 or 33, we'll jump into  
 	HandleInterruptRequest0x01 in interruptstubs.s, which is a copy of macro
