@@ -58,6 +58,10 @@ HandleInterruptRequest 0x01
 HandleInterruptRequest 0x0C
 # AM79C973
 HandleInterruptRequest 0x09
+# ATA Primary
+HandleInterruptRequest 0x0E
+# ATA Secondary
+HandleInterruptRequest 0x0F
 
 # (I.4.)
 int_bottom:		# jump target for the macros 2 and 3

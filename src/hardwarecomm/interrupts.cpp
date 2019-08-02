@@ -97,6 +97,12 @@ InterruptManager::InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescr
 	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0C, codeSegmentOffset, &HandleInterruptRequest0x0C, 0, IDT_INTERRUPT_GATE);
 	// (I.30.) Interrupt for AM79C973
 	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x09, codeSegmentOffset, &HandleInterruptRequest0x09, 0, IDT_INTERRUPT_GATE);
+	// (I.31.) Interrupt for ATA Primary
+	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0E, codeSegmentOffset, &HandleInterruptRequest0x09, 0, IDT_INTERRUPT_GATE);
+	// (I.32.) Interrupt for ATA Secondary
+	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0F, codeSegmentOffset, &HandleInterruptRequest0x09, 0, IDT_INTERRUPT_GATE);
+
+
 
 	/* Example: If we get an interrupt 0x21 or 33, we'll jump into  
 	HandleInterruptRequest0x01 in interruptstubs.s, which is a copy of macro
