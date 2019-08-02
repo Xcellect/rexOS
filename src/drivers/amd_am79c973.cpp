@@ -111,7 +111,7 @@ int amd_am79c973::Reset() {
 
 // (Am.4.) Handle interrupt
 uint32_t amd_am79c973::HandleInterrupt(uint32_t esp) {
-    printf("INTERRUPT FROM AMD am79c973\n");
+    printf("\nINTERRUPT FROM AMD am79c973\n");
     // Similar to Programmable Interrupt Controller. If there it tells us there
     // is data, we need to fetch it
     registerAddressPort.Write(0);

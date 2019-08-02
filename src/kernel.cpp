@@ -7,6 +7,7 @@
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
+#include <drivers/ata.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
 #include <multitasking.h>
@@ -240,11 +241,39 @@ extern "C" void kernelMain(void* multiboot_structure,
 	desktop.AddChild(&win2);
 	#endif
 
-	// just for testing
-	
-	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
+	// interrupt 14
+	ATA ata0m(0x1F0, true);
+	printf("ATA Primary Master: ");
+	ata0m.Identify();
+	printf("\n");
 
+	ATA ata0s(0x1F0, false);
+	printf("ATA Primary Slave: ");
+	ata0s.Identify();
+	printf("\n");
+
+
+	char* ataBuffer = "TESTING";
+	ata0s.Write28(0, (uint8_t*) ataBuffer, 7);
+	ata0s.Flush();
+	printf("\n");
+	ata0s.Read28(0,7);
+
+	// interrupt 15
+	ATA ata1m(0x170, true);
+	ATA ata1s(0x170, false);
+	
+
+	
+
+	// third: 0x1E8
+	// fourth: 0x168
+
+	/*
+	// just for testing
+	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
 	eth0->Send((uint8_t*) "AAA", 3);
+	*/
 
 	interrupts.Activate();
 	
