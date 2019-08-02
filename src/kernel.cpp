@@ -1,5 +1,6 @@
 #include <common/types.h>
 #include <gdt.h>
+#include <heap.h>
 #include <hardwarecomm/interrupts.h>
 #include <hardwarecomm/pci.h>
 #include <drivers/driver.h>
@@ -9,6 +10,8 @@
 #include <gui/desktop.h>
 #include <gui/window.h>
 #include <multitasking.h>
+
+#include <drivers/amd_am79c973.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -24,7 +27,7 @@ void printf(char* str) {
 	 *  	    high (4) bits ^ 	^ low (4) bits (color information)
 	 *   	     (1st) high byte ^ (default val: 0xFF00)
 	 */
-	uint16_t* VideoMemory = (uint16_t*) 0xb8000;
+	static uint16_t* VideoMemory = (uint16_t*) 0xb8000;
 	// Cursor, so printf() call doesn't write to the same memory every time
 	static uint8_t x = 0, y = 0;
 
@@ -62,7 +65,7 @@ void printf(char* str) {
 }
 
 void printfHex(uint8_t key) {
-	char* foo = "00 ";
+	char* foo = "00";
     char* hex = "0123456789ABCDEF";
     foo[0] = hex[(key >> 4) & 0xF];
     foo[1] = hex[key & 0xF];
@@ -162,12 +165,31 @@ extern "C" void kernelMain(void* multiboot_structure,
 	code/data segments
 	*/
 	GlobalDescriptorTable gdt;
+	uint32_t* memupper = (uint32_t*)(((size_t)multiboot_structure) + 8);
+	size_t heap = 10*1024*1024;
+	//Instantiating dynamic memory management/heap
+	MemoryManager mem_manage(heap, (*memupper)*1024 - heap - 10*1024);
+
+	printf("\nHeap: 0x");
+	printfHex((heap >> 24) & 0xFF);
+	printfHex((heap >> 16) & 0xFF);
+	printfHex((heap >> 8) & 0xFF);
+	printfHex((heap) & 0xFF);
+
+	void* allocated = mem_manage.malloc(1024);
+	printf("\nAllocated: 0x");
+	printfHex(((size_t)allocated >> 24) & 0xFF);
+	printfHex(((size_t)allocated >> 16) & 0xFF);
+	printfHex(((size_t)allocated >> 8) & 0xFF);
+	printfHex(((size_t)allocated) & 0xFF);
+	printf("\n");
+
 	// IntHandler needs to comm TM to do the scheduling
 	TaskManager taskmngr;
-	Task task1(&gdt, taskA);
-	Task task2(&gdt, taskB);
-	taskmngr.AddTask(&task1);
-	taskmngr.AddTask(&task2);
+	//Task task1(&gdt, taskA);
+	//Task task2(&gdt, taskB);
+	//taskmngr.AddTask(&task1);
+	//taskmngr.AddTask(&task2);
 
 	/* (K.4.) Passing the GDT's address to the interrupt manager to map the
 	interrupts to the code segments defined by the GDT. In a userspace program
@@ -175,7 +197,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 	interrupt handler is located. Interrupt manager's job is to switch the
 	segments, access rights (0 - kernel space), and go to the interrupt handler
 	*/
-	rexos::hardwarecomm::InterruptManager interrupts(&gdt, &taskmngr);
+	rexos::hardwarecomm::InterruptManager interrupts(0x20, &gdt, &taskmngr);
 	
 	printf("Initializing Hardware, Stage 1\n");
 	DriverManager drvManager;
@@ -217,7 +239,13 @@ extern "C" void kernelMain(void* multiboot_structure,
 	Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
 	desktop.AddChild(&win2);
 	#endif
+
+	// just for testing
 	
+	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
+
+	eth0->Send((uint8_t*) "AAA", 3);
+
 	interrupts.Activate();
 	
 	

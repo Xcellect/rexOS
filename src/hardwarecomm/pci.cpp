@@ -1,27 +1,25 @@
 #include <hardwarecomm/pci.h>
+#include <drivers/amd_am79c973.h>
+
 using namespace rexos::common;
-using namespace rexos::hardwarecomm;
 using namespace rexos::drivers;
+using namespace rexos::hardwarecomm;
 
 
 PCIDeviceDescriptor::PCIDeviceDescriptor() {
-
 }
+
 PCIDeviceDescriptor::~PCIDeviceDescriptor() {
-    
 }
 
 // Constructor
 PCIController::PCIController()
 : dataport(0xCFC),  // (P.2.) Setting port numbers for data and command ports
-commandport(0xCF8)
-{
-
+commandport(0xCF8) {
 }
 
 
 PCIController::~PCIController() {
-    
 }
 
 
@@ -104,11 +102,13 @@ void PCIController::SelectDriver(DriverManager* driver_manager, rexos::hardwarec
                     // The address will be set to the higher bits of the BAR,
                     // which in case of I/O BARs contains the port number
                         dev.portBase = (uint32_t)bar.address;
-                    // Get driver for this dev
-                    Driver* driver = GetDriver(dev, interrupt);
-                    if(driver != 0)
-                        driver_manager->AddDriver(driver);
                 }
+                // Get driver for this dev
+                // We only want one driver for a device and not every base
+                // address register
+                Driver* driver = GetDriver(dev, interrupt);
+                if(driver != 0)
+                    driver_manager->AddDriver(driver);
 
                 printf("PCI BUS ");
                 printfHex(bus & 0xFF);
@@ -127,11 +127,7 @@ void PCIController::SelectDriver(DriverManager* driver_manager, rexos::hardwarec
                 printfHex((dev.device_id & 0xFF00) >> 8);
                 printfHex(dev.device_id & 0xFF);
                 printf("\n");
-                
-                
-
-
-            }
+           }
         }
     }
 }
@@ -153,7 +149,7 @@ BaseAddressRegister PCIController::GetBaseAddressRegister(uint16_t bus, uint16_t
     uint32_t temp;
     
     if(result.type == MemoryMapping) {
-        uint16_t barOffset = 0x10 + 4*bar;
+        //uint16_t barOffset = 0x10 + 4*bar;
         /*
         // google lowlevel.eu/pci/base_analyse
         result.prefetchable = ((bar_value >> 3) & 0x1) == 0x1;
@@ -234,20 +230,26 @@ BaseAddressRegister PCIController::GetBaseAddressRegister(uint16_t bus, uint16_t
         result.address = (uint8_t*) (bar_value & ~0x3);
         result.prefetchable = false;
     }
-    
-        
-
     return result;
 }
 
 
 // (P.22.)
 Driver* PCIController::GetDriver(PCIDeviceDescriptor dev, InterruptManager* interrputs) {
+    Driver *driver = 0;
     switch(dev.vendor_id) {
         case 0x1022: // AMD
             switch(dev.device_id) {
                 case 0x2000: // am79c973 network chip
-                    printf(" AMD am79c973 ");
+                printf("AMD am79c973 ");
+                    driver = (amd_am79c973*)MemoryManager::activeMemoryManager->malloc(sizeof(amd_am79c973));
+                    if(driver != 0) {
+                        // printf("NEW IS NOT WORKING");
+                        new (driver)amd_am79c973(&dev, interrputs);
+                    } else
+                        printf("instantiation failed");
+                   
+                    return driver;
                     break;
             }
             break;
@@ -258,15 +260,13 @@ Driver* PCIController::GetDriver(PCIDeviceDescriptor dev, InterruptManager* inte
         case 0x03: // Graphics
             switch(dev.subclass_id) {
                 case 0x00:  // VGA graphics devices
-                    printf(" VGA ");
+                    printf("VGA ");
                     break;
             }
             break;
     }
-    return 0;
+    return driver;
 }
-
-
 
 // (P.14.)
 PCIDeviceDescriptor PCIController::GetDeviceDescriptor(uint16_t bus, 
@@ -277,10 +277,10 @@ PCIDeviceDescriptor PCIController::GetDeviceDescriptor(uint16_t bus,
     result.device = device;
     result.function = function;
     
-    result.vendor_id = Read(bus, device, function, 0x0);
-    result.device_id = Read(bus, device, function, 0x2);
+    result.vendor_id = Read(bus, device, function, 0x00);
+    result.device_id = Read(bus, device, function, 0x02);
 
-    result.class_id = Read(bus, device, function, 0xb);
+    result.class_id = Read(bus, device, function, 0x0b);
     result.subclass_id = Read(bus, device, function, 0x0a);
     result.interface_id = Read(bus, device, function, 0x09);
 

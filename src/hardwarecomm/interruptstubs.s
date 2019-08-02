@@ -17,8 +17,7 @@
 # kernel is declared whenever a different code file needed to use it)
 .extern _ZN5rexos12hardwarecomm16InterruptManager15handleInterruptEhj
 
-# Macro 1: IgnoreInterruptRequest
-.global _ZN5rexos12hardwarecomm16InterruptManager22IgnoreInterruptRequestEv
+
 
 # Start Macro 2: HandleException
 .macro HandleException num
@@ -57,6 +56,8 @@ HandleInterruptRequest 0x00
 HandleInterruptRequest 0x01
 # Mouse
 HandleInterruptRequest 0x0C
+# AM79C973
+HandleInterruptRequest 0x09
 
 # (I.4.)
 int_bottom:		# jump target for the macros 2 and 3
@@ -102,6 +103,8 @@ int_bottom:		# jump target for the macros 2 and 3
 
 	add $4, %esp
 
+# Macro 1: IgnoreInterruptRequest
+.global _ZN5rexos12hardwarecomm16InterruptManager22IgnoreInterruptRequestEv
 _ZN5rexos12hardwarecomm16InterruptManager22IgnoreInterruptRequestEv:
 	iret	# exiting/returning from this code to the previous process's stack
 # (I.2.)

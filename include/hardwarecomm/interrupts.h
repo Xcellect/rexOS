@@ -35,6 +35,8 @@ namespace rexos {
 				// (I.26.) Something like an IDT but on a higher level
 				// Hence, the InterruptHandler array of 256 entries
 				InterruptHandler* handlers[256];
+				// Hardware interrupt offset
+				rexos::common::uint16_t hardwareInterruptOffset;
 				// A ptr to the task manager
 				TaskManager* taskManager;
 				// (I.7.) The entries of IDT are called Gate Descriptors
@@ -66,22 +68,7 @@ namespace rexos {
 					void(*handler)(),
 					rexos::common::uint8_t DescriptorPrivilegeLevel,  // access
 					rexos::common::uint8_t DescriptorType);			  // flags
-
-				// Finally, the purpose of the following is to tell the ports 
-				// to give us the interrupts
-				Port8BitSlow picMasterCommand;
-				Port8BitSlow picMasterData;
-				Port8BitSlow picSlaveCommand;
-				Port8BitSlow picSlaveData;
-
-			public:
-			// Ctor for IM (gets a ptr to the GDT so gdt.h is included)
-				InterruptManager(rexos::GlobalDescriptorTable* gdt, TaskManager* taskManager);
-				~InterruptManager();	// Dtor
-				// Signal CPU to start interrupts
-				void Activate();
-				// Signal CPU to close interrupts		
-				void Deactivate();
+				
 				static rexos::common::uint32_t handleInterrupt(rexos::common::uint8_t interruptNumber, rexos::common::uint32_t esp);
 				// (I.21.) Static function handleInterrupt will call this non
 				// static function of the object ActiveInterruptManager
@@ -92,6 +79,24 @@ namespace rexos {
 				static void HandleInterruptRequest0x00();		// timer interrupt
 				static void HandleInterruptRequest0x01();		// keyboard
 				static void HandleInterruptRequest0x0C();		// mouse
+				static void HandleInterruptRequest0x09();		// am79c973
+				// Finally, the purpose of the following is to tell the ports 
+				// to give us the interrupts
+				Port8BitSlow picMasterCommand;
+				Port8BitSlow picMasterData;
+				Port8BitSlow picSlaveCommand;
+				Port8BitSlow picSlaveData;
+				
+
+			public:
+			// Ctor for IM (gets a ptr to the GDT so gdt.h is included)
+				InterruptManager(rexos::common::uint16_t hardwareInterruptOffset, rexos::GlobalDescriptorTable* gdt, TaskManager* taskManager);
+				~InterruptManager();	// Dtor
+				// Signal CPU to start interrupts
+				void Activate();
+				// Signal CPU to close interrupts		
+				void Deactivate();
+				
 		};
 	}
 }
