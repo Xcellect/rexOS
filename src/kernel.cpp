@@ -2,6 +2,7 @@
 #include <gdt.h>
 #include <heap.h>
 #include <hardwarecomm/interrupts.h>
+#include <drivers/syscalls.h>
 #include <hardwarecomm/pci.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
@@ -19,6 +20,8 @@ using namespace rexos::common;
 using namespace rexos::drivers;
 using namespace rexos::hardwarecomm;
 using namespace rexos::gui;
+
+// #define GRAPHICSMODE
 
 void printf(char* str) {
 	/* There is a specific memory location = 0xb8000. Whatever is put there
@@ -130,13 +133,18 @@ class MouseToConsole : public MouseEventHandler {
 
 };
 
+void sysprintf(char* str) {
+	asm("int $0x80" :: "a" (4), "b" (str));
+}
+
+// Now the tasks can call what's legal in usermode
 void taskA() {
 	while(true)
-		printf("A");
+		sysprintf("A");
 }
 void taskB() {
 	while(true)
-		printf("B");
+		sysprintf("B");
 }
 
 
@@ -187,10 +195,10 @@ extern "C" void kernelMain(void* multiboot_structure,
 
 	// IntHandler needs to comm TM to do the scheduling
 	TaskManager taskmngr;
-	//Task task1(&gdt, taskA);
-	//Task task2(&gdt, taskB);
-	//taskmngr.AddTask(&task1);
-	//taskmngr.AddTask(&task2);
+	Task task1(&gdt, taskA);
+	Task task2(&gdt, taskB);
+	taskmngr.AddTask(&task1);
+	taskmngr.AddTask(&task2);
 
 	/* (K.4.) Passing the GDT's address to the interrupt manager to map the
 	interrupts to the code segments defined by the GDT. In a userspace program
@@ -199,7 +207,10 @@ extern "C" void kernelMain(void* multiboot_structure,
 	segments, access rights (0 - kernel space), and go to the interrupt handler
 	*/
 	rexos::hardwarecomm::InterruptManager interrupts(0x20, &gdt, &taskmngr);
-	
+	// Syscall is int 0x80
+	SyscallHandler syscalls(&interrupts, 0x80);
+
+
 	printf("Initializing Hardware, Stage 1\n");
 	DriverManager drvManager;
 	#ifdef GRAPHICSMODE
@@ -209,16 +220,20 @@ extern "C" void kernelMain(void* multiboot_structure,
 		#ifdef GRAPHICSMODE
 		KeyboardDriver keyboard(&interrupts, &desktop);
 		#endif
+		#ifndef GRAPHICSMODE
 		PrintfKeyboardEventHandler kbhandler;
 		KeyboardDriver keyboard(&interrupts, &kbhandler);
+		#endif
 		drvManager.AddDriver(&keyboard);
 		
 		
 		#ifdef GRAPHICSMODE
 		MouseDriver mouse(&interrupts, &desktop);
 		#endif
+		#ifndef GRAPHICSMODE
 		MouseToConsole mousehandler;
 		MouseDriver mouse(&interrupts, &mousehandler);
+		#endif
 		drvManager.AddDriver(&mouse);
 
 		PCIController PCICon;
@@ -277,9 +292,9 @@ extern "C" void kernelMain(void* multiboot_structure,
 
 	interrupts.Activate();
 	
-	
-	while(1);
-	#ifdef GRAPHICSMODE
+	while(1) {
+		#ifdef GRAPHICSMODE
 		desktop.Draw(&vga);
-	#endif
+		#endif
+	}
 }
