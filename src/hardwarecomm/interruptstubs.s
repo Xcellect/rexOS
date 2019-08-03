@@ -45,6 +45,9 @@ _ZN5rexos12hardwarecomm16InterruptManager26HandleInterruptRequest\num\()Ev:
 .endm
 # End Macro 3
 
+
+
+
 # (I.5.)
 # The following are copies of the above macros with different numbers for
 # different interrupts. In order to use them as HandleInterruptRequest
@@ -62,6 +65,8 @@ HandleInterruptRequest 0x09
 HandleInterruptRequest 0x0E
 # ATA Secondary
 HandleInterruptRequest 0x0F
+# Syscall (software) interrupt
+HandleInterruptRequest 0x80
 
 # (I.4.)
 int_bottom:		# jump target for the macros 2 and 3

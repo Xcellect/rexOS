@@ -82,6 +82,7 @@ namespace rexos {
 				static void HandleInterruptRequest0x09();
 				static void HandleInterruptRequest0x0E();
 				static void HandleInterruptRequest0x0F();		// am79c973
+				static void HandleInterruptRequest0x80();
 				// Finally, the purpose of the following is to tell the ports 
 				// to give us the interrupts
 				Port8BitSlow picMasterCommand;
@@ -98,7 +99,7 @@ namespace rexos {
 				void Activate();
 				// Signal CPU to close interrupts		
 				void Deactivate();
-				
+				common::uint16_t HWInterruptOffset();
 		};
 	}
 }

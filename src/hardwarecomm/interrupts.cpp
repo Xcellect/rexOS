@@ -101,6 +101,8 @@ InterruptManager::InterruptManager(uint16_t hardwareInterruptOffset, GlobalDescr
 	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0E, codeSegmentOffset, &HandleInterruptRequest0x09, 0, IDT_INTERRUPT_GATE);
 	// (I.32.) Interrupt for ATA Secondary
 	SetInterruptDescriptorTableEntry(hardwareInterruptOffset + 0x0F, codeSegmentOffset, &HandleInterruptRequest0x09, 0, IDT_INTERRUPT_GATE);
+	// (I.33.) Syscall interrupt
+	SetInterruptDescriptorTableEntry(0x80, codeSegmentOffset, &HandleInterruptRequest0x80, 0, IDT_INTERRUPT_GATE);
 
 
 
@@ -199,4 +201,8 @@ uint32_t InterruptManager::DoHandleInterrupt(uint8_t interruptNumber, uint32_t e
 	}
 
 	return esp;
+}
+
+common::uint16_t InterruptManager::HWInterruptOffset() {
+	return this->hardwareInterruptOffset;
 }
