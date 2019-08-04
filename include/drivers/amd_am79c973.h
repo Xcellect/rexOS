@@ -10,6 +10,25 @@
 
 namespace rexos {
     namespace drivers {
+        class amd_am79c973;
+        // Instead of deriving the network chip from an ethernet driver, which
+        // would give us the raw data handler, we'll be imposing it here like 
+        // the mouse and keyboard's instance.
+        // The RawDataHandler in the ethernet driver class should have an
+        // ethernet driver backend, because unlike with the mouse and keyboard
+        // we want to send data to the device. So the handler needs to know its
+        // backend where it's getting its data from.
+        class RawDataHandler {
+            protected:
+                amd_am79c973* backend;  // This should be a ptr to the ethernet driver
+            public:
+                RawDataHandler(amd_am79c973* backend);
+                ~RawDataHandler();
+
+                virtual bool OnRawDataReceived(common::uint8_t* buffer, common::uint32_t size);
+                virtual void Send(common::uint8_t* buffer, common::uint32_t size);
+        };
+
         class amd_am79c973 : public Driver, public hardwarecomm::InterruptHandler {
                 struct InitializationBlock {
                     common::uint16_t mode; // for promiscuous mode
@@ -69,7 +88,9 @@ namespace rexos {
                 common::uint8_t receiveBufferDescMemory[2048 + 15];     // 2
                 common::uint8_t receiveBuffers[2*1024 + 15][8];         // 1
                 common::uint8_t currentReceiveBuffer;
-
+                // In the driver for the network device, we'll implement this
+                // handler
+                RawDataHandler* handler;
             public:
                 amd_am79c973(hardwarecomm::PCIDeviceDescriptor* dev, hardwarecomm::InterruptManager* intManager);
                 ~amd_am79c973();
@@ -79,7 +100,8 @@ namespace rexos {
 
                 void Send(rexos::common::uint8_t* buffer, int count);
                 void Receive();
-                
+                void SetHandler(RawDataHandler* handler);
+                rexos::common::uint64_t GetMACAddress();
         };
     }
 

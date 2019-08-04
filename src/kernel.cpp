@@ -14,13 +14,14 @@
 #include <multitasking.h>
 
 #include <drivers/amd_am79c973.h>
+#include <net/ethframe.h>
 
 using namespace rexos;
 using namespace rexos::common;
 using namespace rexos::drivers;
 using namespace rexos::hardwarecomm;
 using namespace rexos::gui;
-
+using namespace rexos::net;
 // #define GRAPHICSMODE
 
 void printf(char* str) {
@@ -195,11 +196,12 @@ extern "C" void kernelMain(void* multiboot_structure,
 
 	// IntHandler needs to comm TM to do the scheduling
 	TaskManager taskmngr;
+	/* 
 	Task task1(&gdt, taskA);
 	Task task2(&gdt, taskB);
 	taskmngr.AddTask(&task1);
 	taskmngr.AddTask(&task2);
-
+	*/
 	/* (K.4.) Passing the GDT's address to the interrupt manager to map the
 	interrupts to the code segments defined by the GDT. In a userspace program
 	when the CPU gets an interrupt, it has to move to kernel space where the
@@ -219,8 +221,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 		
 		#ifdef GRAPHICSMODE
 		KeyboardDriver keyboard(&interrupts, &desktop);
-		#endif
-		#ifndef GRAPHICSMODE
+		#else
 		PrintfKeyboardEventHandler kbhandler;
 		KeyboardDriver keyboard(&interrupts, &kbhandler);
 		#endif
@@ -229,8 +230,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 		
 		#ifdef GRAPHICSMODE
 		MouseDriver mouse(&interrupts, &desktop);
-		#endif
-		#ifndef GRAPHICSMODE
+		#else
 		MouseToConsole mousehandler;
 		MouseDriver mouse(&interrupts, &mousehandler);
 		#endif
@@ -255,7 +255,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 	Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
 	desktop.AddChild(&win2);
 	#endif
-
+	/*
 	// interrupt 14
 	ATA ata0m(0x1F0, true);
 	printf("ATA Primary Master: ");
@@ -277,18 +277,19 @@ extern "C" void kernelMain(void* multiboot_structure,
 	// interrupt 15
 	ATA ata1m(0x170, true);
 	ATA ata1s(0x170, false);
-	
+	*/	
 
 	
 
 	// third: 0x1E8
 	// fourth: 0x168
 
-	/*
+	
 	// just for testing
 	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
-	eth0->Send((uint8_t*) "AAA", 3);
-	*/
+	//eth0->Send((uint8_t*) "AAA", 3);
+	EthernetFrameProvider ethFrame(eth0);
+	ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
 
 	interrupts.Activate();
 	
