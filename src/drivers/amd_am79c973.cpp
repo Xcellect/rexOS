@@ -8,6 +8,23 @@ using namespace rexos::hardwarecomm;
 void printf(char*);
 void printfHex(uint8_t);
 
+
+RawDataHandler::RawDataHandler(amd_am79c973* backend) {
+    this->backend = backend;
+    backend->SetHandler(this);
+}
+RawDataHandler::~RawDataHandler() {
+    backend->SetHandler(0);
+}
+bool RawDataHandler::OnRawDataReceived(uint8_t* buffer, uint32_t size) {
+    return false;
+}
+void RawDataHandler::Send(uint8_t* buffer, uint32_t size) {
+    backend->Send(buffer, size);
+}
+
+
+
 // (Am.1.) Constructor
 amd_am79c973::amd_am79c973(PCIDeviceDescriptor* dev, InterruptManager* intManager) 
 : Driver(),
@@ -20,6 +37,7 @@ registerAddressPort(dev->portBase + 0x12),
 resetPort(dev->portBase + 0x14),
 busControlRegisterDataPort(dev->portBase + 0x16)
 {
+    this->handler = 0;
     currentSendBuffer = 0;
     currentReceiveBuffer = 0;
 
@@ -182,14 +200,30 @@ void amd_am79c973::Receive() {
                             size -= 4;  // remove the last 4 bytes of its checksum
                         // copy the address of the data
                         uint8_t* buffer = (uint8_t*) (receiveBufferDesc[currentReceiveBuffer].address);
+                        if(handler != 0) {
+                            if(handler->OnRawDataReceived(buffer, size)) {
+                                Send(buffer,size);
+                            }
+                        }
+                        /* instead of printing the received data, pass it to
+                        the handler
                         for(int i = 0; i < size; i++) {
                             // Print what we received
                             printfHex(buffer[i]);
                             printf(" ");
                         }
+                        */
                     }
                     // Tell the device we're done handling this
                     receiveBufferDesc[currentReceiveBuffer].flags2 = 0;
                     receiveBufferDesc[currentReceiveBuffer].flags = 0x80000F7FF; // clears the buffer
             }
-}          
+} 
+
+void amd_am79c973::SetHandler(RawDataHandler* handler) {
+    this->handler = handler;
+}
+
+uint64_t amd_am79c973::GetMACAddress() {
+    return initBlock.physicalAddress;
+}
