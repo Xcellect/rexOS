@@ -102,6 +102,9 @@ namespace rexos {
                 void Receive();
                 void SetHandler(RawDataHandler* handler);
                 rexos::common::uint64_t GetMACAddress();
+                // Instead of using DHCP, we set the IP address manually
+                common::uint64_t SetIPAddress(common::uint32_t IP_BE);
+                common::uint64_t GetIPAddress();
         };
     }
 
