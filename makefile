@@ -28,6 +28,7 @@ objects = obj/loader.o \
 		obj/gui/window.o \
 		obj/gui/desktop.o \
 		obj/net/ethframe.o \
+		obj/net/arp.o \
 		obj/kernel.o
 
 obj/%.o: src/%.cpp

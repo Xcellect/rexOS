@@ -76,3 +76,11 @@ void EthernetFrameProvider::Send(common::uint64_t dstMAC_BE, common::uint16_t et
     }
     backend->Send(bufferToSend, size + sizeof(EthernetFrameHeader));
 }
+
+common::uint32_t EthernetFrameProvider::GetIPAddress() {
+    return backend->GetIPAddress();
+}
+
+common::uint64_t EthernetFrameProvider::GetMACAddress() {
+    return backend->GetMACAddress();
+}

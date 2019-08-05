@@ -44,7 +44,10 @@ namespace rexos {
                 bool OnRawDataReceived(common::uint8_t* buffer, common::int32_t size);
                 void Send(common::uint64_t dstMAC_BE, common::uint16_t etherType_BE, 
                         common::uint8_t* buffer, common::uint32_t size);
-                
+                // EthernetFrameProvider will get the IP address from the net
+                // driver's initBlock
+                common::uint32_t GetIPAddress();
+                common::uint64_t GetMACAddress();
         };
     }
 }

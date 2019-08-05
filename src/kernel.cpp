@@ -15,6 +15,7 @@
 
 #include <drivers/amd_am79c973.h>
 #include <net/ethframe.h>
+#include <net/arp.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -179,7 +180,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 	size_t heap = 10*1024*1024;
 	//Instantiating dynamic memory management/heap
 	MemoryManager mem_manage(heap, (*memupper)*1024 - heap - 10*1024);
-
+	/*
 	printf("\nHeap: 0x");
 	printfHex((heap >> 24) & 0xFF);
 	printfHex((heap >> 16) & 0xFF);
@@ -193,7 +194,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 	printfHex(((size_t)allocated >> 8) & 0xFF);
 	printfHex(((size_t)allocated) & 0xFF);
 	printf("\n");
-
+	*/
 	// IntHandler needs to comm TM to do the scheduling
 	TaskManager taskmngr;
 	/* 
@@ -284,15 +285,40 @@ extern "C" void kernelMain(void* multiboot_structure,
 	// third: 0x1E8
 	// fourth: 0x168
 
-	
+	uint8_t ip1 = 10, ip2 = 0, ip3 = 2, ip4 = 15;
+	uint32_t ip_be = ((uint32_t)ip4) << 24
+					| ((uint32_t)ip3) << 16
+					| ((uint32_t)ip2) << 8
+					| ((uint32_t)ip1);
+	uint8_t gip1 = 10, gip2 = 0, gip3 = 2, gip4 = 2;	// gateway
+	uint32_t gip_be = ((uint32_t)gip4) << 24
+					| ((uint32_t)gip3) << 16
+					| ((uint32_t)gip2) << 8
+					| ((uint32_t)gip1);
+
+	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
 	// just for testing
 	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
-	//eth0->Send((uint8_t*) "AAA", 3);
-	EthernetFrameProvider ethFrame(eth0);
-	ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
 
+	
+	// Setting the IP at layer 2 so other layers can request it later
+	eth0->SetIPAddress(ip_be);
+	
+	//eth0->Send((uint8_t*) "AAA", 3);
+	// Attaching layer 2 (ethFrame) to layer 1 (driver)
+	EthernetFrameProvider ethFrame(eth0);	
+	// Attaching layer 3 (network/ARP) to layer 2 (data link/ethernet)
+	AddressResolutionProtocol arp(&ethFrame);
+	
+
+	//ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
+	
+	// We can only get reply to the requests at layer 3 after the interrupts
+	// are activated
 	interrupts.Activate();
 	
+	arp.Resolve(gip_be);
+
 	while(1) {
 		#ifdef GRAPHICSMODE
 		desktop.Draw(&vga);

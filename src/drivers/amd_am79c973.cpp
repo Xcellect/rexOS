@@ -172,6 +172,12 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
                     *dst = *src;    // Copy data from right to left
                     // Similar to stack operation
                 }
+    
+    printf("Sending: ");
+    for(int i = 0; i < size; i++) {
+        printfHex(buffer[i]); 
+        printf(" ");
+    }
     sendBufferDesc[sendDescriptor].avail = 0;   // Mark not available
     sendBufferDesc[sendDescriptor].flags2 = 0;  // Clear error messages
     // See pages 186-188 of http://support.amd.com/TechDocs/20550.pdf
@@ -200,6 +206,13 @@ void amd_am79c973::Receive() {
                             size -= 4;  // remove the last 4 bytes of its checksum
                         // copy the address of the data
                         uint8_t* buffer = (uint8_t*) (receiveBufferDesc[currentReceiveBuffer].address);
+                        
+                        for(int i = 0; i < (size > 64 ? 64 : size) ; i++) {
+                            // Print what we received
+                            printfHex(buffer[i]);
+                            printf(" ");
+                        }
+                        
                         if(handler != 0) {
                             if(handler->OnRawDataReceived(buffer, size)) {
                                 Send(buffer,size);
@@ -226,4 +239,12 @@ void amd_am79c973::SetHandler(RawDataHandler* handler) {
 
 uint64_t amd_am79c973::GetMACAddress() {
     return initBlock.physicalAddress;
+}
+
+common::uint64_t amd_am79c973::SetIPAddress(common::uint32_t IP_BE) {
+    initBlock.logicalAddress = IP_BE;
+}
+
+common::uint64_t amd_am79c973::GetIPAddress() {
+    return initBlock.logicalAddress;
 }
