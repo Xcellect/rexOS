@@ -16,16 +16,16 @@ namespace rexos {
             common::uint32_t srcIP;
             common::uint64_t dstMAC : 48;
             common::uint32_t dstIP;
-        } __attribute__ ((packed));
+        } __attribute__((packed));
 
         class AddressResolutionProtocol : public EthernetFrameHandler {
-                common::uint32_t IPcache[120];
-                common::uint64_t MACcache[120];
+                common::uint32_t IPcache[128];
+                common::uint64_t MACcache[128];
                 int numCacheEntries;
             public:
                 AddressResolutionProtocol(EthernetFrameProvider* backend);
                 ~AddressResolutionProtocol();
-                virtual bool OnEtherFrameReceived(common::uint8_t* ethFramePayload, common::uint32_t size);
+                bool OnEthernetFrameReceived(common::uint8_t* ethFramePayload, common::uint32_t size);
                 // Send a request to get the MAC address of the passed IP
                 // address. When we get the response this is going to the cache
                 // This can be retrieved using GetMACFromCache

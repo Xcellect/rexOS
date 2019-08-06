@@ -27,13 +27,13 @@ namespace rexos {
                 virtual bool OnEthernetFrameReceived(common::uint8_t* etherFramePayload,
                                                     common::uint32_t size);
                 // Calls the send function of backend (EthernetFrameProvider)
-                virtual void Send(common::uint64_t dstMAC_BE, common::uint8_t* etherFramePayload,
+                void Send(common::uint64_t dstMAC_BE, common::uint8_t* etherFramePayload,
                                                     common::uint32_t size);
         };
 
 
         class EthernetFrameProvider : public drivers::RawDataHandler {
-            friend EthernetFrameHandler;
+            friend class EthernetFrameHandler;
             protected:
                 // EthernetFrameProvider will have an array of pointers to the
                 // handler
@@ -41,7 +41,7 @@ namespace rexos {
             public:
                 EthernetFrameProvider(drivers::amd_am79c973* backend);
                 ~EthernetFrameProvider();
-                bool OnRawDataReceived(common::uint8_t* buffer, common::int32_t size);
+                bool OnRawDataReceived(common::uint8_t* rawData, common::uint32_t size);
                 void Send(common::uint64_t dstMAC_BE, common::uint16_t etherType_BE, 
                         common::uint8_t* buffer, common::uint32_t size);
                 // EthernetFrameProvider will get the IP address from the net
