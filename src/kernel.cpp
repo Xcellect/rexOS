@@ -16,6 +16,7 @@
 #include <drivers/amd_am79c973.h>
 #include <net/ethframe.h>
 #include <net/arp.h>
+#include <net/ipv4.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -296,6 +297,12 @@ extern "C" void kernelMain(void* multiboot_structure,
 					| ((uint32_t)gip2) << 8
 					| ((uint32_t)gip1);
 
+	uint8_t subnet1 = 255, subnet2 = 255, subnet3 = 255, subnet4 = 0;	// gateway
+	uint32_t subnet_be = ((uint32_t)subnet4) << 24
+					| ((uint32_t)subnet3) << 16
+					| ((uint32_t)subnet2) << 8
+					| ((uint32_t)subnet1);
+
 	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
 	// just for testing
 	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
@@ -310,15 +317,15 @@ extern "C" void kernelMain(void* multiboot_structure,
 	// Attaching layer 3 (network/ARP) to layer 2 (data link/ethernet)
 	AddressResolutionProtocol arp(&ethFrame);
 	
-
+	IPv4Provider ipv4(&ethFrame, &arp, gip_be,subnet_be);
 	//ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
 	
 	// We can only get reply to the requests at layer 3 after the interrupts
 	// are activated
 	interrupts.Activate();
 	
-	arp.Resolve(gip_be);
-
+	// arp.Resolve(gip_be);
+    ipv4.Send(gip_be, 0x0008, (uint8_t*) "foobar", 6);
 	while(1) {
 		#ifdef GRAPHICSMODE
 		desktop.Draw(&vga);

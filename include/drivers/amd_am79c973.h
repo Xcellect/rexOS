@@ -26,7 +26,7 @@ namespace rexos {
                 ~RawDataHandler();
 
                 virtual bool OnRawDataReceived(common::uint8_t* buffer, common::uint32_t size);
-                virtual void Send(common::uint8_t* buffer, common::uint32_t size);
+                void Send(common::uint8_t* buffer, common::uint32_t size);
         };
 
         class amd_am79c973 : public Driver, public hardwarecomm::InterruptHandler {
@@ -103,7 +103,7 @@ namespace rexos {
                 void SetHandler(RawDataHandler* handler);
                 rexos::common::uint64_t GetMACAddress();
                 // Instead of using DHCP, we set the IP address manually
-                common::uint64_t SetIPAddress(common::uint32_t IP_BE);
+                void SetIPAddress(common::uint32_t IP_BE);
                 common::uint64_t GetIPAddress();
         };
     }

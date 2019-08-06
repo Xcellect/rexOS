@@ -74,10 +74,10 @@ busControlRegisterDataPort(dev->portBase + 0x16)
     initBlock.logicalAddress = 0;
     // We move the ptr 15 bytes to the right and discard the last bits to move 
     // it to 16byte aligned address
-    sendBufferDesc = (BufferDescriptor*) ((((uint32_t)(&sendBufferDescMemory[0]) + 15 & ~(uint32_t)0xF)));
+    sendBufferDesc = (BufferDescriptor*) ((((uint32_t)&sendBufferDescMemory[0]) + 15) & ~((uint32_t)0xF));
     initBlock.sendBufferDescAddress = (uint32_t)sendBufferDesc;
 
-    receiveBufferDesc = (BufferDescriptor*) ((((uint32_t)(&receiveBufferDescMemory[0]) + 15 & ~(uint32_t)0xF)));
+    receiveBufferDesc = (BufferDescriptor*) ((((uint32_t)&receiveBufferDescMemory[0]) + 15) & ~((uint32_t)0xF));
     initBlock.receiveBufferDescAddress = (uint32_t)receiveBufferDesc;
 
     // We've selected the memory for these descriptors
@@ -87,10 +87,10 @@ busControlRegisterDataPort(dev->portBase + 0x16)
         // Setting the length of the buffer descriptor
         sendBufferDesc[i].flags = 0x7FF
                                 | 0xF000;
-        sendBufferDesc[i].flags = 0;
+        sendBufferDesc[i].flags2 = 0;
         sendBufferDesc[i].avail = 0;
         
-        receiveBufferDesc[i].address = (((uint32_t)&receiveBuffers[i] + 15) & ~(uint32_t)0xF);
+        receiveBufferDesc[i].address = (((uint32_t)&receiveBuffers[i]) + 15) & ~(uint32_t)0xF;
         receiveBufferDesc[i].flags = 0xF7FF
                                 | 0x80000000; // declares itself as a receive buffer
         receiveBufferDesc[i].flags2 = 0;
@@ -139,7 +139,7 @@ uint32_t amd_am79c973::HandleInterrupt(uint32_t esp) {
     if((temp & 0x8000) == 0x8000) printf("AMD am79c973 ERROR\n");
     if((temp & 0x2000) == 0x2000) printf("AMD am79c973 COLLISION ERROR\n");
     if((temp & 0x1000) == 0x1000) printf("AMD am79c973 MISSED FRAME\n");
-    if((temp & 0x0000) == 0x0000) printf("AMD am79c973 MEMORY ERROR\n");
+    if((temp & 0x0800) == 0x0800) printf("AMD am79c973 MEMORY ERROR\n");
     if((temp & 0x0400) == 0x0400) Receive();
     if((temp & 0x0200) == 0x0200) printf("AMD am79c973 DATA SENT\n");
     // acknowledge
@@ -182,7 +182,7 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
     sendBufferDesc[sendDescriptor].flags2 = 0;  // Clear error messages
     // See pages 186-188 of http://support.amd.com/TechDocs/20550.pdf
     sendBufferDesc[sendDescriptor].flags = 0x8300F000   // Set the size
-                                        | ((uint16_t)(-size) & 0xFFF);
+                                        | ((uint16_t)((-size) & 0xFFF));
     registerAddressPort.Write(0);   // Setting command to 0th register
     registerDataPort.Write(0x48);   // Command 0x48 is the send command
     
@@ -207,16 +207,18 @@ void amd_am79c973::Receive() {
                         // copy the address of the data
                         uint8_t* buffer = (uint8_t*) (receiveBufferDesc[currentReceiveBuffer].address);
                         
-                        for(int i = 0; i < (size > 64 ? 64 : size) ; i++) {
-                            // Print what we received
-                            printfHex(buffer[i]);
-                            printf(" ");
-                        }
+                        
                         
                         if(handler != 0) {
                             if(handler->OnRawDataReceived(buffer, size)) {
                                 Send(buffer,size);
                             }
+                        }
+                        
+                        for(int i = 0; i < (size > 64 ? 64 : size) ; i++) {
+                            // Print what we received
+                            printfHex(buffer[i]);
+                            printf(" ");
                         }
                         /* instead of printing the received data, pass it to
                         the handler
@@ -241,7 +243,7 @@ uint64_t amd_am79c973::GetMACAddress() {
     return initBlock.physicalAddress;
 }
 
-common::uint64_t amd_am79c973::SetIPAddress(common::uint32_t IP_BE) {
+void amd_am79c973::SetIPAddress(common::uint32_t IP_BE) {
     initBlock.logicalAddress = IP_BE;
 }
 

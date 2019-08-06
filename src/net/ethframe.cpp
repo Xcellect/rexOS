@@ -1,21 +1,21 @@
 #include <net/ethframe.h>
 
-
 using namespace rexos;
 using namespace rexos::common;
 using namespace rexos::net;
 using namespace rexos::drivers;
-
-
 
 EthernetFrameHandler::EthernetFrameHandler(EthernetFrameProvider* backend, common::uint16_t etherType) {
     this->etherType_BE = ((etherType & 0x00FF) << 8)
                         | ((etherType & 0xFF00) >> 8);  // Converting LE to BE
     this->backend = backend;
     // Register this handler in the ethernet frame provider
-    backend->handlers[etherType_BE] = 0;
+    backend->handlers[etherType_BE] = this;
 }
-EthernetFrameHandler::~EthernetFrameHandler() {}
+EthernetFrameHandler::~EthernetFrameHandler() {
+    if(backend->handlers[etherType_BE] == this)
+        backend->handlers[etherType_BE] = 0;
+}
 
 bool EthernetFrameHandler::OnEthernetFrameReceived(common::uint8_t* etherFramePayload, uint32_t size) {
     return false;
@@ -28,23 +28,30 @@ void EthernetFrameHandler::Send(common::uint64_t dstMAC_BE, common::uint8_t* pay
 
 EthernetFrameProvider::EthernetFrameProvider(drivers::amd_am79c973* backend) 
 : RawDataHandler(backend)
-{
+{   
     for(uint32_t i = 0; i < 65535; i++) {
         handlers[i] = 0;
     }
 }
 EthernetFrameProvider::~EthernetFrameProvider() {}
 
+
+
+
 // When we receive the raw data, we put the ethernet header structure over it
-bool EthernetFrameProvider::OnRawDataReceived(common::uint8_t* buffer, common::int32_t size) {
-    EthernetFrameHeader* header = (EthernetFrameHeader*)buffer;
+bool EthernetFrameProvider::OnRawDataReceived(common::uint8_t* rawData, common::uint32_t size) {
+    
+    if(size < sizeof(EthernetFrameHeader)) {
+        return false;
+    }
+    EthernetFrameHeader* header = (EthernetFrameHeader*)rawData;
     bool sendBack = false;
     if(header->dstMAC_BE == 0xFFFFFFFFFFFF
     || header->dstMAC_BE == backend->GetMACAddress()) {
         if(handlers[header->etherType_BE] != 0) {
             // Take only the data inside the frame
             sendBack = handlers[header->etherType_BE]->OnEthernetFrameReceived(
-                buffer + sizeof(EthernetFrameHeader), 
+                rawData + sizeof(EthernetFrameHeader), 
                 size - sizeof(EthernetFrameHeader));
         }
         // Removed the last 4bytes of C2C checksum in the net driver already
@@ -54,7 +61,6 @@ bool EthernetFrameProvider::OnRawDataReceived(common::uint8_t* buffer, common::i
         header->dstMAC_BE = header->srcMAC_BE;
         header->srcMAC_BE = backend->GetMACAddress();
     }
-
     return sendBack;
 }
 // Here we'll need the dynamic memory management (heap)
@@ -75,6 +81,7 @@ void EthernetFrameProvider::Send(common::uint64_t dstMAC_BE, common::uint16_t et
         dst[i] = src[i];
     }
     backend->Send(bufferToSend, size + sizeof(EthernetFrameHeader));
+    MemoryManager::activeMemoryManager->free(bufferToSend);
 }
 
 common::uint32_t EthernetFrameProvider::GetIPAddress() {

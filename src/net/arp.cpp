@@ -4,19 +4,18 @@ using namespace rexos::common;
 using namespace rexos::net;
 using namespace rexos::drivers;
 
-
-
 AddressResolutionProtocol::AddressResolutionProtocol(EthernetFrameProvider* backend) 
 : EthernetFrameHandler(backend, 0x806)
 {
     numCacheEntries = 0;
 }
-AddressResolutionProtocol::~AddressResolutionProtocol() {}
-bool AddressResolutionProtocol::OnEtherFrameReceived(uint8_t* ethFramePayload, uint32_t size) {
+AddressResolutionProtocol::~AddressResolutionProtocol() {
+}
+bool AddressResolutionProtocol::OnEthernetFrameReceived(uint8_t* etherFramePayload, uint32_t size) {
     if(size < sizeof(AddressResolutionProtocol))
         return false;
     // Cast the ethFramePayload to arp struct (data is aligned to this format)
-    ARPMessage* arp = (ARPMessage*) ethFramePayload;
+    ARPMessage* arp = (ARPMessage*) etherFramePayload;
     if(arp->HWType == 0x0100) {         // ethernet message
         if(arp->protocol == 0x0008
             && arp->HWAddressSize == 6
@@ -37,7 +36,8 @@ bool AddressResolutionProtocol::OnEtherFrameReceived(uint8_t* ethFramePayload, u
                    break;
                 case 0x0200:    // Got a response to our request
                    // Put the response in our cache
-                   if(numCacheEntries < 120) {
+                   
+                   if(numCacheEntries < 128) {
                     IPcache[numCacheEntries] = arp->srcIP;
                     MACcache[numCacheEntries] = arp->srcMAC;
                     numCacheEntries++; 
@@ -57,8 +57,6 @@ bool AddressResolutionProtocol::OnEtherFrameReceived(uint8_t* ethFramePayload, u
                     So it'll stay like this for now.
                    */
                    break;
-                default:
-                    break;
                 }
         
         }
@@ -85,21 +83,24 @@ void AddressResolutionProtocol::RequestMACAddress(uint32_t IP_BE) {
 uint64_t AddressResolutionProtocol::GetMACFromCache(uint32_t IP_BE) {
     for(int i = 0; i < numCacheEntries; i++) {
         if(IPcache[i] == IP_BE) {
-            return IPcache[i];
+            return MACcache[i];
         }
     }
     return 0xFFFFFFFFFFFF;  // bcast address
 }
 
+void printf(char*);
 common::uint64_t AddressResolutionProtocol::Resolve(common::uint32_t IP_BE) {
     uint64_t result = GetMACFromCache(IP_BE);
     if(result == 0xFFFFFFFFFFFF) {
         RequestMACAddress(IP_BE);
     }
+    printf("\n[Entering resolve loop]\n");
     // possible infinite loop if the machine we requested isn't connected
     // need a timeout
     while(result == 0xFFFFFFFFFFFF) {   
         result = GetMACFromCache(IP_BE);
     }
+    printf("\n[Loop terminated]\n");
     return result;
 }
