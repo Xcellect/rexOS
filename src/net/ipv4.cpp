@@ -4,7 +4,8 @@ using namespace rexos;
 using namespace rexos::common;
 using namespace rexos::drivers;
 using namespace rexos::net;
-
+void printf(char*);
+void printfHex(uint8_t);
 IPv4Handler::IPv4Handler(IPv4Provider* backend, common::uint8_t protocol) {
     this->backend = backend;
     this->ip_protocol = protocol;
@@ -91,6 +92,7 @@ bool IPv4Provider::OnEthernetFrameReceived(uint8_t* etherFramePayload, uint32_t 
         header->srcIP = temp;
         // reset the TTL
         header->timeToLive = 0x40; // 64 hops
+        header->checksum = 0;      // set the checksum to 0 before calculating
         header->checksum = Checksum((uint16_t*)header, 4*header->headerLength); 
     }
 
@@ -105,8 +107,8 @@ void IPv4Provider::Send(common::uint32_t dstIP_BE, common::uint8_t protocol,
     newHeader->tos = 0;
     newHeader->totalLength = size + sizeof(IPv4Header);
     // Convert to big endian
-    newHeader->totalLength =  ((newHeader->totalLength & 0xFF00) << 8)
-                            | ((newHeader->totalLength & 0x00FF) >> 8); 
+    newHeader->totalLength =  ((newHeader->totalLength & 0xFF00) >> 8)
+                            | ((newHeader->totalLength & 0x00FF) << 8); 
     newHeader->ident = 0x0100;  // set id to something random
     newHeader->flags_offset = 0x0040; // this message is not fragmented
     newHeader->timeToLive = 0x40;
@@ -120,9 +122,11 @@ void IPv4Provider::Send(common::uint32_t dstIP_BE, common::uint8_t protocol,
 
     // Copy the data to send to the new buffer w/ the new header
     uint8_t* dataBuffer = buffer + sizeof(IPv4Header);
+    
     for(int i = 0; i < size; i++) {
         dataBuffer[i] = data[i];
     }
+   
     /* This is where the subnet mask and default gateway come into play. By 
         default we'll send the data to the destination. So the route is the
         resolved IP for the MAC from the ARP. If the target IP is not in our
@@ -138,6 +142,16 @@ void IPv4Provider::Send(common::uint32_t dstIP_BE, common::uint8_t protocol,
     if((dstIP_BE & subnet_mask) != (newHeader->srcIP & subnet_mask))
         route = gatewayIP;
     // EthernetFrameHandler
+    printf("\nPassed data [L3]: ");
+    for(int i = 0; i < size; i++) {
+        printfHex(data[i]); 
+        printf(" ");
+    }
+    printf("\nSending [L3]: ");
+    for(int i = 0; i < size; i++) {
+        printfHex(buffer[i]); 
+        printf(" ");
+    }
     backend->Send(arp->Resolve(route), this->etherType_BE, buffer, sizeof(IPv4Header) + size);
     MemoryManager::activeMemoryManager->free(buffer);
 }

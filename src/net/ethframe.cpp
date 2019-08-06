@@ -35,7 +35,8 @@ EthernetFrameProvider::EthernetFrameProvider(drivers::amd_am79c973* backend)
 }
 EthernetFrameProvider::~EthernetFrameProvider() {}
 
-
+void printf(char*);
+void printfHex(uint8_t);
 
 
 // When we receive the raw data, we put the ethernet header structure over it
@@ -63,9 +64,11 @@ bool EthernetFrameProvider::OnRawDataReceived(common::uint8_t* rawData, common::
     }
     return sendBack;
 }
+
 // Here we'll need the dynamic memory management (heap)
 void EthernetFrameProvider::Send(common::uint64_t dstMAC_BE, common::uint16_t etherType_BE, 
                         common::uint8_t* buffer, common::uint32_t size) {
+    
     // Allocate the memory for header and size of the buffer we want to send
     uint8_t* bufferToSend = (uint8_t*)MemoryManager::activeMemoryManager->malloc(sizeof(EthernetFrameHeader) + size);
     // This header now points the bufferToSend
@@ -79,6 +82,11 @@ void EthernetFrameProvider::Send(common::uint64_t dstMAC_BE, common::uint16_t et
     uint8_t* dst = bufferToSend + sizeof(EthernetFrameHeader);
     for(uint32_t i = 0; i < size; i++) {
         dst[i] = src[i];
+    }
+    printf("\nSending [L2]: ");
+    for(int i = 0; i < size; i++) {
+        printfHex(buffer[i]); 
+        printf(" ");
     }
     backend->Send(bufferToSend, size + sizeof(EthernetFrameHeader));
     MemoryManager::activeMemoryManager->free(bufferToSend);

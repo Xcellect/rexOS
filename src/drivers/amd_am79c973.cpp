@@ -83,7 +83,7 @@ busControlRegisterDataPort(dev->portBase + 0x16)
     // We've selected the memory for these descriptors
     // Now we have to set these descriptors
     for(uint32_t i = 0; i < 8; i++) {
-        sendBufferDesc[i].address = (((uint32_t)&sendBuffers[i] + 15) & ~(uint32_t)0xF);
+        sendBufferDesc[i].address = (((uint32_t)&sendBuffers[i]) + 15) & ~(uint32_t)0xF;
         // Setting the length of the buffer descriptor
         sendBufferDesc[i].flags = 0x7FF
                                 | 0xF000;
@@ -129,7 +129,7 @@ int amd_am79c973::Reset() {
 
 // (Am.4.) Handle interrupt
 uint32_t amd_am79c973::HandleInterrupt(uint32_t esp) {
-    printf("\nINTERRUPT FROM AMD am79c973\n");
+    printf(" [INTERRUPT: AMD am79c973] ");
     // Similar to Programmable Interrupt Controller. If there it tells us there
     // is data, we need to fetch it
     registerAddressPort.Write(0);
@@ -141,12 +141,12 @@ uint32_t amd_am79c973::HandleInterrupt(uint32_t esp) {
     if((temp & 0x1000) == 0x1000) printf("AMD am79c973 MISSED FRAME\n");
     if((temp & 0x0800) == 0x0800) printf("AMD am79c973 MEMORY ERROR\n");
     if((temp & 0x0400) == 0x0400) Receive();
-    if((temp & 0x0200) == 0x0200) printf("AMD am79c973 DATA SENT\n");
+    if((temp & 0x0200) == 0x0200) printf(" [DATA SENT] ");
     // acknowledge
     registerAddressPort.Write(0);
     registerDataPort.Write(temp);
     
-    if((temp & 0x0100) == 0x0100) printf("AMD am79c973 INIT DONE\n");
+    if((temp & 0x0100) == 0x0100) printf(" [INIT DONE: AMD am79c973] ");
     return esp;
 
 }
@@ -154,6 +154,7 @@ uint32_t amd_am79c973::HandleInterrupt(uint32_t esp) {
 // // (Am.5.) Send and receive functions for this devices
 void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
     // (Am.5.a.) Need to know where the data is written to <- given by currentSendBuffer
+    
     int sendDescriptor = currentSendBuffer;
     // Move/cycle the current send buffer to the next so we can send data from
     // different tasks synchronusly
@@ -172,8 +173,7 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
                     *dst = *src;    // Copy data from right to left
                     // Similar to stack operation
                 }
-    
-    printf("Sending: ");
+    printf("\nSending [L1]: ");
     for(int i = 0; i < size; i++) {
         printfHex(buffer[i]); 
         printf(" ");
@@ -185,10 +185,9 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
                                         | ((uint16_t)((-size) & 0xFFF));
     registerAddressPort.Write(0);   // Setting command to 0th register
     registerDataPort.Write(0x48);   // Command 0x48 is the send command
-    
 }
 void amd_am79c973::Receive() {
-    printf("AMD am79c973 DATA RECEIVED\n");
+    printf(" [DATA RECEIVED] ");
     // Iterate through the receive buffers as long as we have receive buffers
     // that contain data
     // In the loop we'll cycle through the currentReceiveBuffer until we find
