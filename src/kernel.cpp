@@ -17,6 +17,7 @@
 #include <net/ethframe.h>
 #include <net/arp.h>
 #include <net/ipv4.h>
+#include <net/icmp.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -303,7 +304,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 					| ((uint32_t)subnet2) << 8
 					| ((uint32_t)subnet1);
 
-	printf("\n\n\n\n\n\n\n\n\n\n\n\n");
+	
 	// just for testing
 	amd_am79c973* eth0 = (amd_am79c973*) (drvManager.drivers[2]);
 
@@ -318,14 +319,17 @@ extern "C" void kernelMain(void* multiboot_structure,
 	AddressResolutionProtocol arp(&ethFrame);
 	
 	IPv4Provider ipv4(&ethFrame, &arp, gip_be,subnet_be);
+	ICMP icmp(&ipv4);
 	//ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
 	
 	// We can only get reply to the requests at layer 3 after the interrupts
 	// are activated
 	interrupts.Activate();
-	
+	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n");
 	// arp.Resolve(gip_be);
-    ipv4.Send(gip_be, 0x0008, (uint8_t*) "foobar", 6);
+    // ipv4.Send(gip_be, 0x0008, (uint8_t*) "foobar", 6);
+	arp.SendMACAddress(gip_be);
+	icmp.RequestEchoReply(gip_be);
 	while(1) {
 		#ifdef GRAPHICSMODE
 		desktop.Draw(&vga);

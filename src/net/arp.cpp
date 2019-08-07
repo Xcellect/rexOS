@@ -35,8 +35,7 @@ bool AddressResolutionProtocol::OnEthernetFrameReceived(uint8_t* etherFramePaylo
                    return true;
                    break;
                 case 0x0200:    // Got a response to our request
-                   // Put the response in our cache
-                   
+                   // Put the responder's MAC and IP in our cache
                    if(numCacheEntries < 128) {
                     IPcache[numCacheEntries] = arp->srcIP;
                     MACcache[numCacheEntries] = arp->srcMAC;
@@ -63,21 +62,20 @@ bool AddressResolutionProtocol::OnEthernetFrameReceived(uint8_t* etherFramePaylo
     }
     return false;
 }
+void printf(char*);
 void AddressResolutionProtocol::RequestMACAddress(uint32_t IP_BE) {
     ARPMessage arp;
     arp.HWType = 0x0100; // ethernet
     arp.protocol = 0x0008; // IPv4
     arp.HWAddressSize = 6;
     arp.IPAddressSize = 4;
-    arp.command = 0x0100;
+    arp.command = 0x0100;   // request
 
     arp.srcMAC = backend->GetMACAddress();
     arp.srcIP = backend->GetIPAddress();
     arp.dstMAC = 0xFFFFFFFFFFFF;
     arp.dstIP = IP_BE;
-    // We have inherited EthernetFrameHandler's send function which will be
-    // used instead of that of the backend (EthernetFrameProvider) (sends
-    // the payload manually)
+    // Request the unknown IP's MAC address
     this->Send(arp.dstMAC, (uint8_t*)&arp, sizeof(ARPMessage));
 }
 uint64_t AddressResolutionProtocol::GetMACFromCache(uint32_t IP_BE) {
@@ -89,18 +87,45 @@ uint64_t AddressResolutionProtocol::GetMACFromCache(uint32_t IP_BE) {
     return 0xFFFFFFFFFFFF;  // bcast address
 }
 
-void printf(char*);
+
 common::uint64_t AddressResolutionProtocol::Resolve(common::uint32_t IP_BE) {
     uint64_t result = GetMACFromCache(IP_BE);
     if(result == 0xFFFFFFFFFFFF) {
+        printf("[ARP: UNKNOWN REMOTE IP. REQUESTING REMOTE MAC.]");
         RequestMACAddress(IP_BE);
     }
-    printf("\n[Entering resolve loop]\n");
     // possible infinite loop if the machine we requested isn't connected
     // need a timeout
     while(result == 0xFFFFFFFFFFFF) {   
         result = GetMACFromCache(IP_BE);
     }
-    printf("\n[Loop terminated]\n");
+    printf("\n[ARP: REMOTE IP RESOLVED. READY TO SEND.]");
     return result;
+}
+/* When we request an ICMP echo reply to some machine, it doesn't know our
+MAC (& IP) address yet and so it cannot answer the ping request. Instead, it 
+sends an ARP request using broadcast MAC. Event if we reply to this broadcast,
+we won't get the answer to the ping. SendMACAddress responds to the ARP request
+made from ICMP with our MAC and IP.
+ */
+// Might be a better idea to broadcast this MAC address to all machines on the
+// local network
+void AddressResolutionProtocol::SendMACAddress(common::uint32_t IP_BE) {
+    printf("[ARP: SENDING HOST MAC TO REMOTE IP.]\n");
+    ARPMessage arp;
+    arp.HWType = 0x0100; // ethernet
+    arp.protocol = 0x0008; // IPv4
+    arp.HWAddressSize = 6;
+    arp.IPAddressSize = 4;
+    arp.command = 0x0200;   // response
+
+    arp.srcMAC = backend->GetMACAddress();
+    arp.srcIP = backend->GetIPAddress();
+    arp.dstMAC = Resolve(IP_BE);
+    arp.dstIP = IP_BE;
+    // We have inherited EthernetFrameHandler's send function which will be
+    // used instead of that of the backend (EthernetFrameProvider) (sends
+    // the payload manually)
+    
+    this->Send(arp.dstMAC, (uint8_t*)&arp, sizeof(ARPMessage));
 }

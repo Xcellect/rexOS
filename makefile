@@ -5,7 +5,7 @@
 # -nostdlib: no glibc library
 # -fno-rtti: no runtime type identification
 # -fno-leading-underscore (minor): without this the loader would have to call _kernelMain
-GPPPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore
+GPPPARAMS = -m32 -Iinclude -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore -Wno-write-strings
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
@@ -30,6 +30,7 @@ objects = obj/loader.o \
 		obj/net/ethframe.o \
 		obj/net/arp.o \
 		obj/net/ipv4.o \
+		obj/net/icmp.o \
 		obj/kernel.o
 
 obj/%.o: src/%.cpp

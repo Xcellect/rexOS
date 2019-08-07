@@ -33,7 +33,9 @@ namespace rexos {
                 common::uint64_t GetMACFromCache(common::uint32_t IP_BE);
                 // Sends a request, waits for an answer, and returns the MAC
                 common::uint64_t Resolve(common::uint32_t IP_BE);
-
+                // Explicitly send our MAC to some machine by doing a fake ARP
+                // response (response to a request that hasn't been issued)
+                void SendMACAddress(common::uint32_t IP_BE);
         };
     }
 }

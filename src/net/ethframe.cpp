@@ -83,11 +83,14 @@ void EthernetFrameProvider::Send(common::uint64_t dstMAC_BE, common::uint16_t et
     for(uint32_t i = 0; i < size; i++) {
         dst[i] = src[i];
     }
+    /*
     printf("\nSending [L2]: ");
     for(int i = 0; i < size; i++) {
         printfHex(buffer[i]); 
         printf(" ");
     }
+    */
+    // Sending using Network driver [L1]
     backend->Send(bufferToSend, size + sizeof(EthernetFrameHeader));
     MemoryManager::activeMemoryManager->free(bufferToSend);
 }
