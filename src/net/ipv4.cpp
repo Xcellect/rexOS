@@ -23,8 +23,8 @@ bool IPv4Handler::OnIPv4Received(common::uint32_t srcIP_BE, common::uint32_t dst
 // Default behavior: Discard the message and don't send it back
 void IPv4Handler::Send(common::uint32_t dstIP_BE, common::uint8_t* ipv4Payload,
                                                     common::uint32_t size) {
- // When we do want to send something, pass it to the backend
- backend->Send(dstIP_BE, ip_protocol, ipv4Payload, size);
+    // When we do want to send something, pass it to the backend
+    backend->Send(dstIP_BE, ip_protocol, ipv4Payload, size);
 }
 
 
@@ -141,7 +141,8 @@ void IPv4Provider::Send(common::uint32_t dstIP_BE, common::uint8_t protocol,
     // gateway's IP and send that data to the gateway
     if((dstIP_BE & subnet_mask) != (newHeader->srcIP & subnet_mask))
         route = gatewayIP;
-    // EthernetFrameHandler
+    
+    /*
     printf("\nPassed data [L3]: ");
     for(int i = 0; i < size; i++) {
         printfHex(data[i]); 
@@ -152,6 +153,9 @@ void IPv4Provider::Send(common::uint32_t dstIP_BE, common::uint8_t protocol,
         printfHex(buffer[i]); 
         printf(" ");
     }
+    */
+    // Sending MAC received from ARP resolved IP [L3] to Ethernet Frame [L2]
+    // ARP acts as an interface between L2 and L3
     backend->Send(arp->Resolve(route), this->etherType_BE, buffer, sizeof(IPv4Header) + size);
     MemoryManager::activeMemoryManager->free(buffer);
 }
@@ -176,6 +180,6 @@ uint16_t IPv4Provider::Checksum(common::uint16_t* data, common::uint32_t lengthI
         // do this until the first 16 bits are all 0.
         temp = (temp & 0xFFFF) + (temp >> 16);
     }
-    // temp must be negated in return
+    // Take the temp's bitwise complement
     return ((~temp & 0xFF00) >> 8) | ((~temp & 0x00FF) << 8);
 }

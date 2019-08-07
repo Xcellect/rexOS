@@ -173,8 +173,8 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
                     *dst = *src;    // Copy data from right to left
                     // Similar to stack operation
                 }
-    printf("\nSending [L1]: ");
-    for(int i = 0; i < size; i++) {
+    printf("\nSENDING: ");
+    for(int i = 0; i < (size > 64 ? 64 : size); i++) {
         printfHex(buffer[i]); 
         printf(" ");
     }
@@ -187,7 +187,7 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
     registerDataPort.Write(0x48);   // Command 0x48 is the send command
 }
 void amd_am79c973::Receive() {
-    printf(" [DATA RECEIVED] ");
+    printf("\nRECEIVING: ");
     // Iterate through the receive buffers as long as we have receive buffers
     // that contain data
     // In the loop we'll cycle through the currentReceiveBuffer until we find
@@ -208,17 +208,20 @@ void amd_am79c973::Receive() {
                         
                         
                         
+                        for(int i = 0; i < (size > 64 ? 64 : size) ; i++) {
+                            // Print what we received
+                            printfHex(buffer[i]);
+                            printf(" ");
+                        }
+                        
                         if(handler != 0) {
                             if(handler->OnRawDataReceived(buffer, size)) {
                                 Send(buffer,size);
                             }
                         }
                         
-                        for(int i = 0; i < (size > 64 ? 64 : size) ; i++) {
-                            // Print what we received
-                            printfHex(buffer[i]);
-                            printf(" ");
-                        }
+                       
+
                         /* instead of printing the received data, pass it to
                         the handler
                         for(int i = 0; i < size; i++) {

@@ -45,9 +45,6 @@ _ZN5rexos12hardwarecomm16InterruptManager26HandleInterruptRequest\num\()Ev:
 .endm
 # End Macro 3
 
-
-
-
 # (I.5.)
 # The following are copies of the above macros with different numbers for
 # different interrupts. In order to use them as HandleInterruptRequest
