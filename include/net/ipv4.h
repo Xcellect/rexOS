@@ -71,7 +71,7 @@ namespace rexos {
                         common::uint8_t* data, common::uint32_t size);
 
                 static common::uint16_t Checksum(common::uint16_t* data, common::uint32_t lengthInBytes);
-            
+                common::uint32_t GetIPAddress();
         };
     }
 }

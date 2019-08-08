@@ -18,6 +18,7 @@
 #include <net/arp.h>
 #include <net/ipv4.h>
 #include <net/icmp.h>
+#include <net/udp.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -136,6 +137,27 @@ class MouseToConsole : public MouseEventHandler {
 		}
 
 };
+// When we get data, we'll print out every character one at a time
+// One could set data + size to \0 and print the whole data but that
+// would possibly remove the last character and if the next character
+// was set to \n, it would break the memory manager
+class PrintfUDPHandler : public UDPHandler {
+	public:
+		void HandleUDPMessage(UDPSocket* socket, uint8_t* data, uint16_t size) {
+				char* foo = " ";
+				for(int i = 0; i < (size > 16 ? 16 : size); i++) {
+					foo[0] = data[i];
+					if(foo[0] == '\0') {
+						break;
+					}
+					printf(foo);
+				}
+		}
+};
+
+
+
+
 
 void sysprintf(char* str) {
 	asm("int $0x80" :: "a" (4), "b" (str));
@@ -320,6 +342,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 	
 	IPv4Provider ipv4(&ethFrame, &arp, gip_be,subnet_be);
 	ICMP icmp(&ipv4);
+	UDPProvider udp(&ipv4);
 	//ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
 	
 	// We can only get reply to the requests at layer 3 after the interrupts
@@ -329,7 +352,19 @@ extern "C" void kernelMain(void* multiboot_structure,
 	// arp.Resolve(gip_be);
     // ipv4.Send(gip_be, 0x0008, (uint8_t*) "foobar", 6);
 	arp.SendMACAddress(gip_be);
-	icmp.RequestEchoReply(gip_be);
+	// icmp.RequestEchoReply(gip_be);
+	PrintfUDPHandler udphandler;
+	
+	
+	UDPSocket* udpsocket = udp.Listen(1337);
+	udp.Bind(udpsocket, &udphandler);
+	
+	
+	/* First test:
+	 UDPSocket* udpsocket = udp.Connect(gip_be, 31337);
+	 udp.Bind(udpsocket, &udphandler);
+	 udpsocket->Send((uint8_t*)"AAAAAAAAA", 9);
+	*/
 	while(1) {
 		#ifdef GRAPHICSMODE
 		desktop.Draw(&vga);

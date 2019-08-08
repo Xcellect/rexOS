@@ -183,3 +183,7 @@ uint16_t IPv4Provider::Checksum(common::uint16_t* data, common::uint32_t lengthI
     // Take the temp's bitwise complement
     return ((~temp & 0xFF00) >> 8) | ((~temp & 0x00FF) << 8);
 }
+
+common::uint32_t IPv4Provider::GetIPAddress() {
+    return backend->GetIPAddress();
+}

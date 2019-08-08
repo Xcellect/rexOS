@@ -44,6 +44,6 @@ _stop:							# infinite loop
 
 # bss segment is for undeclared data
 .section .bss
-.space 2*1024*1024;	# 2 MB space padding after text segment so stack doesn't overwrite text
+.space 4*1024*1024;	# 4 MiB stack space
 
 kernel_stack:
