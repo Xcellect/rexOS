@@ -4,6 +4,9 @@ using namespace rexos::common;
 using namespace rexos::net;
 using namespace rexos::drivers;
 
+void printf(char*);
+void printfHex(uint8_t);
+
 AddressResolutionProtocol::AddressResolutionProtocol(EthernetFrameProvider* backend) 
 : EthernetFrameHandler(backend, 0x806)
 {
@@ -62,7 +65,6 @@ bool AddressResolutionProtocol::OnEthernetFrameReceived(uint8_t* etherFramePaylo
     }
     return false;
 }
-void printf(char*);
 void AddressResolutionProtocol::RequestMACAddress(uint32_t IP_BE) {
     ARPMessage arp;
     arp.HWType = 0x0100; // ethernet
@@ -75,6 +77,14 @@ void AddressResolutionProtocol::RequestMACAddress(uint32_t IP_BE) {
     arp.srcIP = backend->GetIPAddress();
     arp.dstMAC = 0xFFFFFFFFFFFF;
     arp.dstIP = IP_BE;
+    uint8_t* buffer = (uint8_t*)&arp;
+    /*
+    printf("\nSending [Layer 3]: ");
+    for(int i = 0; i < sizeof(ARPMessage); i++) {
+        printfHex(buffer[i]); 
+        printf(" ");
+    }
+    */
     // Request the unknown IP's MAC address
     this->Send(arp.dstMAC, (uint8_t*)&arp, sizeof(ARPMessage));
 }
@@ -123,6 +133,14 @@ void AddressResolutionProtocol::SendMACAddress(common::uint32_t IP_BE) {
     arp.srcIP = backend->GetIPAddress();
     arp.dstMAC = Resolve(IP_BE);
     arp.dstIP = IP_BE;
+    uint8_t* buffer = (uint8_t*)&arp;
+    /*
+    printf("\nSending [Layer 3]: ");
+    for(int i = 0; i < sizeof(ARPMessage); i++) {
+        printfHex(buffer[i]); 
+        printf(" ");
+    }
+    */
     // We have inherited EthernetFrameHandler's send function which will be
     // used instead of that of the backend (EthernetFrameProvider) (sends
     // the payload manually)

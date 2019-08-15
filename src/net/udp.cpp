@@ -4,6 +4,7 @@ using namespace rexos;
 using namespace rexos::net;
 using namespace rexos::common;
 void printf(char*);
+void printfHex(uint8_t);
 UDPHandler::UDPHandler() {}
 UDPHandler::~UDPHandler() {}
 void UDPHandler::HandleUDPMessage(UDPSocket* socket, 
@@ -45,6 +46,14 @@ UDPProvider::~UDPProvider() {}
 bool UDPProvider::OnIPv4Received(uint32_t srcIP_BE, 
                         uint32_t dstIP_BE, uint8_t* ipv4Payload,
                         uint32_t size) {
+    /*
+    printf("\nRECEIVING [Layer 3]: ");
+    for(int i = 0; i < (size > 64 ? 64 : size); i++) {
+            // Print what we received
+            printfHex(ipv4Payload[i]);
+            printf(" ");
+    }
+    */
     // When we receive data, as usual cast it to this protocol's header struct
     // so the information becomes available
     if(size < sizeof(UDPHeader)) {
@@ -161,6 +170,18 @@ void UDPProvider::Send(UDPSocket* socket, uint8_t* data,
     for(int i = 0; i < size; i++) {
         bufferMessage[i] = data[i];
     }
+    /* 
+    printf("\nPassed data [Layer 4]: ");
+    for(int i = 0; i < size; i++) {
+        printfHex(data[i]); 
+        printf(" ");
+    }
+    printf("\nSending [Layer 4]: ");
+    for(int i = 0; i < size; i++) {
+        printfHex(buffer[i]); 
+        printf(" ");
+    }
+    */
     // Computation for layer 4 checksum involves pseudo header which constains
     // some data from IPv4 header which absolutely doesn't belong here. Quite 
     // crazy. Good news: we can set it to 0 here because UDP does not require

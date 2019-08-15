@@ -24,6 +24,9 @@ void EthernetFrameHandler::Send(common::uint64_t dstMAC_BE, common::uint8_t* pay
                                                     common::uint32_t size) {
     backend->Send(dstMAC_BE, etherType_BE, payloadData, size);
 }
+common::uint32_t EthernetFrameHandler::GetIPAddress() {
+    return backend->GetIPAddress();
+}
 
 
 EthernetFrameProvider::EthernetFrameProvider(drivers::amd_am79c973* backend) 
@@ -41,11 +44,12 @@ void printfHex(uint8_t);
 
 // When we receive the raw data, we put the ethernet header structure over it
 bool EthernetFrameProvider::OnRawDataReceived(common::uint8_t* rawData, common::uint32_t size) {
-    
     if(size < sizeof(EthernetFrameHeader)) {
         return false;
     }
     EthernetFrameHeader* header = (EthernetFrameHeader*)rawData;
+
+    
     bool sendBack = false;
     if(header->dstMAC_BE == 0xFFFFFFFFFFFF
     || header->dstMAC_BE == backend->GetMACAddress()) {
@@ -83,13 +87,13 @@ void EthernetFrameProvider::Send(common::uint64_t dstMAC_BE, common::uint16_t et
     for(uint32_t i = 0; i < size; i++) {
         dst[i] = src[i];
     }
-    /*
-    printf("\nSending [L2]: ");
+    /* 
+    printf("\nSending [Layer 2]: ");
     for(int i = 0; i < size; i++) {
         printfHex(buffer[i]); 
         printf(" ");
-    }
-    */
+    }*/
+    
     // Sending using Network driver [L1]
     backend->Send(bufferToSend, size + sizeof(EthernetFrameHeader));
     MemoryManager::activeMemoryManager->free(bufferToSend);

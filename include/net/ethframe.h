@@ -29,6 +29,7 @@ namespace rexos {
                 // Calls the send function of backend (EthernetFrameProvider)
                 void Send(common::uint64_t dstMAC_BE, common::uint8_t* etherFramePayload,
                                                     common::uint32_t size);
+                common::uint32_t GetIPAddress();
         };
 
 
