@@ -44,8 +44,11 @@ IPv4Provider::~IPv4Provider() {
 }
 
 bool IPv4Provider::OnEthernetFrameReceived(uint8_t* etherFramePayload, uint32_t size) {
+    /*
+    printf("\nRECEIVING [Layer 2]: ");
     if(size < sizeof(IPv4Header))
         return false;
+    */
     IPv4Header* header = (IPv4Header*)etherFramePayload;
     bool sendBack = false;
     if(header->dstIP == backend->GetIPAddress()) {
@@ -53,7 +56,11 @@ bool IPv4Provider::OnEthernetFrameReceived(uint8_t* etherFramePayload, uint32_t 
         if(length > size) {
             length = size;
         }
-        
+        for(int i = 0; i < (size > 64 ? 64 : size); i++) {
+            // Print what we received
+            printfHex(etherFramePayload[i]);
+            printf(" ");
+        }
         if(handlers[header->protocol] != 0) {
             // Take only the data inside the frame
             sendBack = handlers[header->protocol]->OnIPv4Received(
@@ -141,19 +148,14 @@ void IPv4Provider::Send(common::uint32_t dstIP_BE, common::uint8_t protocol,
     // gateway's IP and send that data to the gateway
     if((dstIP_BE & subnet_mask) != (newHeader->srcIP & subnet_mask))
         route = gatewayIP;
-    
-    /*
-    printf("\nPassed data [L3]: ");
-    for(int i = 0; i < size; i++) {
-        printfHex(data[i]); 
-        printf(" ");
-    }
-    printf("\nSending [L3]: ");
+    /* 
+    printf("\nSending [Layer 3]: ");
     for(int i = 0; i < size; i++) {
         printfHex(buffer[i]); 
         printf(" ");
     }
     */
+    
     // Sending MAC received from ARP resolved IP [L3] to Ethernet Frame [L2]
     // ARP acts as an interface between L2 and L3
     backend->Send(arp->Resolve(route), this->etherType_BE, buffer, sizeof(IPv4Header) + size);
@@ -182,8 +184,4 @@ uint16_t IPv4Provider::Checksum(common::uint16_t* data, common::uint32_t lengthI
     }
     // Take the temp's bitwise complement
     return ((~temp & 0xFF00) >> 8) | ((~temp & 0x00FF) << 8);
-}
-
-common::uint32_t IPv4Provider::GetIPAddress() {
-    return backend->GetIPAddress();
 }

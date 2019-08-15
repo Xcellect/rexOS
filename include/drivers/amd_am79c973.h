@@ -104,7 +104,7 @@ namespace rexos {
                 rexos::common::uint64_t GetMACAddress();
                 // Instead of using DHCP, we set the IP address manually
                 void SetIPAddress(common::uint32_t IP_BE);
-                common::uint64_t GetIPAddress();
+                common::uint32_t GetIPAddress();
         };
     }
 

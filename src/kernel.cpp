@@ -19,6 +19,7 @@
 #include <net/ipv4.h>
 #include <net/icmp.h>
 #include <net/udp.h>
+#include <net/tcp.h>
 
 using namespace rexos;
 using namespace rexos::common;
@@ -144,14 +145,58 @@ class MouseToConsole : public MouseEventHandler {
 class PrintfUDPHandler : public UDPHandler {
 	public:
 		void HandleUDPMessage(UDPSocket* socket, uint8_t* data, uint16_t size) {
-				char* foo = " ";
-				for(int i = 0; i < (size > 16 ? 16 : size); i++) {
-					foo[0] = data[i];
-					if(foo[0] == '\0') {
-						break;
-					}
-					printf(foo);
+			// printf("\nRECEIVING [Layer 4]: ");
+			char* foo = " ";
+			// printf("\nRAW: ");
+			for(int i = 0; i < (size > 64 ? 64 : size); i++) {
+				printfHex(data[i]);
+				printf(" ");
+			}
+			// printf("\nASCII: ");
+			for(int i = 0; i < (size > 16 ? 16 : size); i++) {
+				foo[0] = data[i];
+				if(foo[0] == '\0') {
+					break;
 				}
+				printf(foo);
+			}
+		}
+};
+
+class PrintfTCPHandler : public TCPHandler {
+	public:
+		bool HandleTCPMessage(TCPSocket* socket, uint8_t* data, uint16_t size) {
+			printf("\nRCV [TCP]: ");
+			char* foo = " ";
+			// printf("\nRAW: ");
+			for(int i = 0; i < (size > 64 ? 64 : size); i++) {
+				printfHex(data[i]);
+				printf(" ");
+			}
+			// printf("\nASCII: ");
+			for(int i = 0; i < (size > 16 ? 16 : size); i++) {
+				foo[0] = data[i];
+				if(foo[0] == '\0') {
+					break;
+				}
+				printf(foo);
+			}
+			if(size > 4 &&
+				data[0] == 'G' &&
+				data[1] == 'E' &&
+				data[2] == 'T' &&
+				data[3] == ' ' &&
+				data[4] == '/' &&
+				data[5] == ' ' &&
+				data[6] == 'H' &&
+				data[7] == 'T' &&
+				data[8] == 'T' &&
+				data[9] == 'P') {
+					socket->Send((uint8_t*)"HTTP/1.1 200 OK\r\nServer: RexOS\r\nContent-Type: text/html\r\n\r\n<html><head><title> Sup RexOS </title></head><body><b>BLAZE IT REX</b><br> This is lit af </body> </html>\r\n", 167);
+					socket->Disconnect();
+					// Ungraceful: return false;
+				}
+			return true;
 		}
 };
 
@@ -343,27 +388,33 @@ extern "C" void kernelMain(void* multiboot_structure,
 	IPv4Provider ipv4(&ethFrame, &arp, gip_be,subnet_be);
 	ICMP icmp(&ipv4);
 	UDPProvider udp(&ipv4);
+	TCPProvider tcp(&ipv4);
 	//ethFrame.Send(0xFFFFFFFFFFFF, 0x0608, (uint8_t*) "FUCK THE WORLD", 14);
 	
 	// We can only get reply to the requests at layer 3 after the interrupts
 	// are activated
 	interrupts.Activate();
-	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n");
 	// arp.Resolve(gip_be);
     // ipv4.Send(gip_be, 0x0008, (uint8_t*) "foobar", 6);
 	arp.SendMACAddress(gip_be);
+	
 	// icmp.RequestEchoReply(gip_be);
-	PrintfUDPHandler udphandler;
+	// PrintfUDPHandler udphandler;
+	
+	PrintfTCPHandler tcphandler;
+	TCPSocket* tcpsock = tcp.Listen(31337);
+	tcp.Bind(tcpsock, &tcphandler);
+	// tcpsock->Send((uint8_t*)"AAAAAAAAA", 9);
 	
 	
-	UDPSocket* udpsocket = udp.Listen(1337);
+	// UDPSocket* udpsocket = udp.Listen(1337);
+	// udp.Bind(udpsocket, &udphandler);
+	
+	
+	/*
+	UDPSocket* udpsocket = udp.Connect(gip_be, 31337);
 	udp.Bind(udpsocket, &udphandler);
-	
-	
-	/* First test:
-	 UDPSocket* udpsocket = udp.Connect(gip_be, 31337);
-	 udp.Bind(udpsocket, &udphandler);
-	 udpsocket->Send((uint8_t*)"AAAAAAAAA", 9);
+	udpsocket->Send((uint8_t*)"AAAAAAAAA", 9);
 	*/
 	while(1) {
 		#ifdef GRAPHICSMODE

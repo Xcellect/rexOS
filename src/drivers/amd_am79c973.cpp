@@ -173,8 +173,8 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
                     *dst = *src;    // Copy data from right to left
                     // Similar to stack operation
                 }
-    printf("\nSENDING: ");
-    for(int i = 0; i < (size > 64 ? 64 : size); i++) {
+    printf("\nSEND: ");
+    for(int i = 14 + 20; i < (size > 64 ? 64 : size); i++) {
         printfHex(buffer[i]); 
         printf(" ");
     }
@@ -187,7 +187,7 @@ void amd_am79c973::Send(rexos::common::uint8_t* buffer, int size) {
     registerDataPort.Write(0x48);   // Command 0x48 is the send command
 }
 void amd_am79c973::Receive() {
-    printf("\nRECEIVING: ");
+    printf("\nRECV: ");
     // Iterate through the receive buffers as long as we have receive buffers
     // that contain data
     // In the loop we'll cycle through the currentReceiveBuffer until we find
@@ -199,7 +199,7 @@ void amd_am79c973::Receive() {
                 // a single buffer. Else, it's spread over more than one buffer
                 // See page 184
                 if( !(receiveBufferDesc[currentReceiveBuffer].flags & 0x40000000) &&
-                    ((receiveBufferDesc[currentReceiveBuffer].flags & 0x03000000) == 0x03000000) ) {
+                    (receiveBufferDesc[currentReceiveBuffer].flags & 0x03000000) == 0x03000000) {
                         uint32_t size = receiveBufferDesc[currentReceiveBuffer].flags & 0xFFF;  // read size
                         if(size > 64) // above size is of an ethernet 2 frame
                             size -= 4;  // remove the last 4 bytes of its checksum
@@ -208,7 +208,7 @@ void amd_am79c973::Receive() {
                         
                         
                         
-                        for(int i = 0; i < (size > 64 ? 64 : size) ; i++) {
+                        for(int i = 34; i < (size > 64 ? 64 : size) ; i++) {
                             // Print what we received
                             printfHex(buffer[i]);
                             printf(" ");
@@ -233,7 +233,7 @@ void amd_am79c973::Receive() {
                     }
                     // Tell the device we're done handling this
                     receiveBufferDesc[currentReceiveBuffer].flags2 = 0;
-                    receiveBufferDesc[currentReceiveBuffer].flags = 0x80000F7FF; // clears the buffer
+                    receiveBufferDesc[currentReceiveBuffer].flags = 0x8000F7FF; // clears the buffer
             }
 } 
 
@@ -249,6 +249,6 @@ void amd_am79c973::SetIPAddress(common::uint32_t IP_BE) {
     initBlock.logicalAddress = IP_BE;
 }
 
-common::uint64_t amd_am79c973::GetIPAddress() {
+uint32_t amd_am79c973::GetIPAddress() {
     return initBlock.logicalAddress;
 }
