@@ -9,6 +9,7 @@
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
 #include <drivers/ata.h>
+#include <filesystem/msdospart.h>
 #include <gui/desktop.h>
 #include <gui/window.h>
 #include <multitasking.h>
@@ -27,6 +28,7 @@ using namespace rexos::drivers;
 using namespace rexos::hardwarecomm;
 using namespace rexos::gui;
 using namespace rexos::net;
+using namespace rexos::filesystem;
 // #define GRAPHICSMODE
 
 void printf(char* str) {
@@ -325,7 +327,7 @@ extern "C" void kernelMain(void* multiboot_structure,
 	Window win2(&desktop, 40,15,30,30, 0x00,0xA8,0x00);
 	desktop.AddChild(&win2);
 	#endif
-	/*
+	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 	// interrupt 14
 	ATA ata0m(0x1F0, true);
 	printf("ATA Primary Master: ");
@@ -336,24 +338,28 @@ extern "C" void kernelMain(void* multiboot_structure,
 	printf("ATA Primary Slave: ");
 	ata0s.Identify();
 	printf("\n");
+	
+	MSDOSPartitionTable::ReadPartitions(&ata0s);
+	// char* ataBuffer = "TESTING";
 
-
-	char* ataBuffer = "TESTING";
+	/* Stop writing to the raw HDD or it'd break the partition table.
 	ata0s.Write28(0, (uint8_t*) ataBuffer, 7);
 	ata0s.Flush();
 	printf("\n");
 	ata0s.Read28(0,7);
+	*/
 
 	// interrupt 15
 	ATA ata1m(0x170, true);
 	ATA ata1s(0x170, false);
-	*/	
+	
 
 	
 
 	// third: 0x1E8
 	// fourth: 0x168
-
+	
+	/* Networking:
 	uint8_t ip1 = 10, ip2 = 0, ip3 = 2, ip4 = 15;
 	uint32_t ip_be = ((uint32_t)ip4) << 24
 					| ((uint32_t)ip3) << 16
