@@ -35,7 +35,7 @@ namespace rexos {
                 // For asking if the hard drive is there, what kind etc.
                 void Identify();
                 // Highest bits of this sector needs to be ignored
-                void Read28(common:: uint32_t sector, int count);
+                void Read28(common:: uint32_t sector, common::uint8_t* data, int count);
                 void Write28(common::uint32_t sector, common::uint8_t* data, int count);
                 // A function to flush the cache of the hard drive. 
                 // See written notes

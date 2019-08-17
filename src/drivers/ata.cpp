@@ -66,7 +66,7 @@ void ATA::Identify() {
     printf("\n");
 }
 // Highest bits of this sector needs to be ignored
-void ATA::Read28(common:: uint32_t sector, int count) {
+void ATA::Read28(common:: uint32_t sector, common::uint8_t* data, int count) {
      // You cannot Read to a sector larger than what you can address with 28bits
     if(sector & 0xF0000000)     // Check if first 4 bits are 0
         return;
@@ -90,25 +90,29 @@ void ATA::Read28(common:: uint32_t sector, int count) {
     // The hard drive might take some time until it's ready to give the data
     uint8_t status = commandPort.Read();
     while(((status & 0x80) == 0x80) && 
-            ((status & 0x01) != 0x01))  // Waits for the device to be ready
+            ((status & 0x01) != 0x01)) { // Waits for the device to be ready
             status = commandPort.Read();
+    }
     if(status & 0x01) {
-        printf("ERROR");
+        printf(" [ERROR] ");
         return;
     }
 
-    printf("Reading from ATA: ");
+    printf(" [READING] ");
     // Reading the data
     for(uint16_t i = 0; i < count; i+=2) {
         uint16_t wdata = dataPort.Read();
+        /*
+        // Printing
         char* foo = "  \0";
-        foo[0] = wdata & 0x00FF; // Writing high bytes
+        foo[1] = (wdata >> 8) & 0x00FF;
+        foo[0] = wdata & 0x00FF;
+        printf(foo);
+        */
+        data[i] = wdata & 0x00FF; // Writing high bytes
         // Next we write the low byte to the buffer
         if(i+1 < count) 
-            foo[1] = (wdata >> 8) & 0x00FF;
-        else
-            foo[1] = '\0';
-        printf(foo);
+            data[i+1] = (wdata >> 8) & 0x00FF;
     }
     // Read the rest of the sector and discard it
     for(uint16_t i = count + (count % 2); i< bytesPerSector; i+=2) {
@@ -136,7 +140,7 @@ void ATA::Write28(common::uint32_t sector, common::uint8_t* data, int count) {
     lbaHighPort.Write((sector & 0x00FF0000) >> 16);
     commandPort.Write(0x30);        // Write command
 
-    printf("Writing to ATA: ");
+    printf("[WRITING] ");
 
     // Only writing the number of bytes in data
     for(uint16_t i = 0; i < count; i+=2) {
